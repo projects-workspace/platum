@@ -36,3 +36,17 @@ test('workspace creation waits for capabilities to finish loading', () => {
   assert.equal(state.editor, null);
   assert.match(content.innerHTML, /Opening your workspace/);
 });
+
+for (const hasWorkspace of [false, true]) test('shared-history export visibility follows current workspace access: ' + hasWorkspace, () => {
+  const navigationSource = source.slice(source.indexOf('  function navigation() {'), source.indexOf('  function tasksList('));
+  const active = hasWorkspace ? { id: 'workspace', name: 'Known workspace', role: 'client' } : null;
+  const exportControl = { hidden: false };
+  const nodes = {};
+  vm.runInNewContext(navigationSource + '\nnavigation();', {
+    state: { active, workspaces: active ? [active] : [], view: 'home', capabilities: { canCreate: false } },
+    root: { dataset: {}, querySelector: () => exportControl },
+    document: { getElementById: id => nodes[id] ||= {}, title: '' },
+    labels: {}, icons: {}, escape: String, operator: () => false, manager: () => false,
+  });
+  assert.equal(exportControl.hidden, !hasWorkspace);
+});
