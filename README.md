@@ -6,42 +6,31 @@ Agency websites remain separate projects. They can link to Platum but must not s
 
 Production target: <https://client-cabinet.vercel.app>
 
-The frontend and normalized database implementation are prepared locally. Production is not configured or verified until the Supabase project assigned to Platum is available, the migrations and RLS tests pass there, real memberships are provisioned, and the application is deployed and browser-tested with real users.
+**Current implementation snapshot:** [PROJECT_STATE.md](PROJECT_STATE.md). This README remains the setup, local-check, and release guide.
 
-## MVP journey
+The source includes a client portal, an Agency OS interface, normalized Supabase migrations, and deployment configuration. Source and configuration files do not establish the current hosted application, database, Auth, membership, or integration state. Recheck the relevant provider before making release decisions; the procedures below are guidance, not a live status report.
 
-The completed local vertical slice is:
+## MVP workflow
 
-1. An invited client signs in and is authorized through `workspace_members`.
-2. The client creates a structured project request.
-3. An owner, administrator, or assigned team member sees that request in Agency OS.
-4. The operator publishes a persisted reply.
-5. The request, reply, and activity remain visible to the client after reload or a later authenticated session.
-
-The client and Agency OS interfaces use the same relational records. The previous coarse JSON table remains only as rollback evidence and is no longer granted to authenticated browser users by the new migration.
+The MVP centers on an authorized client and project team sharing workspace context, tasks, requests, and responses. See PROJECT_STATE.md for the current implementation, persistence boundaries, and verification checkpoint.
 
 ## Application boundary
 
-- `client-space.html` contains the English-only client workspace and the internal Agency OS interface.
-- `cabinet-data.js` is the authenticated PostgREST/RPC adapter for memberships, workspaces, tasks, requests, replies, forms, materials, deliverables, and activity.
-- `supabase/migrations/` contains the reproducible legacy migration and normalized Platum workspace migration.
-- `supabase/tests/` contains the authenticated RLS allow/deny and cross-workspace isolation tests.
-- `prohor-intake.html` is a legacy-named, English-only questionnaire whose answers stay on the current device. It is not the MVP write path.
-- `bot/` contains the optional Telegram access worker. Authorization uses explicit immutable numeric user IDs and workspace assignments.
-- `google-sheets-intake-webapp.gs` is a disabled-by-default reference collector. The browser does not call it.
-
-Public JavaScript contains no private client records. Remote application data is fetched only after authentication and membership authorization. The local preview remains available for interface review and is clearly separated from remote sync.
+Platum is an independent, agency-neutral platform. Agency websites and marketing pages stay in their own projects and connect through external links or documented integrations. See AGENTS.md for repository boundaries and PROJECT_STATE.md for the current code map and implementation boundaries.
 
 ## Local verification
+
+For the authenticated collaboration workspace, server setup, file access, and the full local Auth/data journey, see [Collaboration setup and verification](docs/COLLABORATION_SETUP.md).
 
 Run the repository and bot checks:
 
 ```sh
 node scripts/check-integrity.js
+node --test tests/team-api.test.js
 npm --prefix bot test
 ```
 
-Run the deterministic local shared-journey service:
+The original deterministic mock remains a legacy UI fixture:
 
 ```sh
 node scripts/mock-platum-api.js
@@ -66,6 +55,8 @@ npx supabase@latest test db
 
 ## Platum Supabase activation
 
+This is a first-time setup or recovery checklist, not evidence that Platum is currently unconfigured. Verify the existing Platum project and live state before any environment-changing action.
+
 Use only the Supabase project assigned to Platum. Do not reuse another ecosystem project's database, key, users, or service credentials.
 
 1. Sign in to the Platum-owned Supabase account and link this repository to that project.
@@ -80,6 +71,8 @@ Use only the Supabase project assigned to Platum. Do not reuse another ecosystem
 10. Browser-test the full journey with two client identities and one operator, including reload/new-session persistence and direct cross-workspace denial.
 
 ## Release checks
+
+These are release criteria, not confirmation of current production status.
 
 Before production release:
 

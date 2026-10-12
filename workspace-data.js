@@ -1,0 +1,185 @@
+(() => {
+  'use strict';
+  const config = window.CLIENT_SPACE_CONFIG || {};
+  const base = String(config.supabaseUrl || '').replace(/\/$/, '');
+  let serverValidated = false;
+  const errors = {
+    EMPTY_MATERIAL: 'Add content, a reference or a file before publishing.',
+    CONFLICT: 'Someone updated this item. Your draft is still here. Load the latest version before saving again.',
+    FORM_CHANGED: 'The questions changed while you were answering. Your answers are kept here. Load the latest form to continue.',
+    CURRENT_VERSION_CHANGED: 'A newer version has been published. Open it before giving your decision.',
+    FORBIDDEN: 'Your access changed. Refresh the workspace or contact the team.',
+    FILE_ACCESS_DENIED: 'One of these files is no longer available in this workspace.',
+    ALREADY_SUBMITTED: 'This response has already been submitted.',
+    FORM_UNAVAILABLE: 'This form is no longer accepting responses.',
+    REQUIRED_ANSWER: 'Complete the required questions before submitting.',
+    UPLOAD_NOT_COMPLETE: 'The file upload is incomplete. Keep this page open and try again.',
+    CLIENT_REVIEW_REQUIRED: 'A client account must give this decision.',
+    INVALID_ASSIGNEE: 'Choose a person from the selected side of the workspace.',
+    INVALID_REQUEST: 'Choose a request from this workspace.',
+    INVALID_URL: 'Use a complete http or https link.',
+    INVALID_BLOCK: 'That section is no longer available. Open the material again.',
+    FILE_TOO_LARGE: 'Files must be between 1 byte and 10 MB. Link larger media from a material.',
+    UNSUPPORTED_FILE: 'Choose a PDF, text document, DOCX, PNG, JPEG or WebP file.',
+    INVALID_FILENAME: 'Rename the file without slashes or control characters, then try again.',
+    NOT_FOUND: 'This item is no longer available. Refresh the workspace.',
+    IDEMPOTENCY_CONFLICT: 'This action changed while being saved. Refresh and try again.',
+  };
+  async function token() {
+    const value = window.CLIENT_SPACE_ACCESS_TOKEN
+      ? await window.CLIENT_SPACE_ACCESS_TOKEN()
+      : window.CLIENT_SPACE_AUTH_CONTEXT?.accessToken;
+    if (!value) throw new Error('Sign in again to continue.');
+    return value;
+  }
+  async function headers() { return { apikey: config.supabasePublishableKey, Authorization: 'Bearer ' + await token() }; }
+  async function request(path, options = {}) {
+    let response;
+    try {
+      response = await fetch(base + '/rest/v1/' + path, {
+        cache: 'no-store',
+        method: options.body === undefined ? 'GET' : 'POST',
+        headers: { ...await headers(), ...(options.body === undefined ? {} : { 'Content-Type': 'application/json' }) },
+        body: options.body === undefined ? undefined : JSON.stringify(options.body),
+        signal: options.signal || AbortSignal.timeout(20000),
+      });
+    } catch (error) {
+      if (error.name === 'AbortError') throw error;
+      throw new Error('The workspace could not be reached. Your input is still here. Try again.');
+    }
+    const data = await response.json().catch(() => null);
+    if (!response.ok) {
+      const code = Object.keys(errors).find(key => String(data?.message || '').includes(key));
+      const error = new Error(code ? errors[code] : response.status === 401
+        ? 'Your session expired. Sign in again to continue.'
+        : data?.code === 'PGRST202' || data?.code === 'PGRST205'
+          ? 'This workspace needs the collaboration database update. Contact your administrator.'
+          : 'This action could not be saved. Check your input, then try again.');
+      error.code = code || data?.code; error.status = response.status;
+      throw error;
+    }
+    return data;
+  }
+  const rpc = (name, body = {}, signal) => request('rpc/' + name, { body, signal });
+  async function rows(table, filters = {}, signal) {
+    const result = [];
+    for (let offset = 0; ; offset += 200) {
+      const query = new URLSearchParams({ select: '*', order: 'id.asc', ...filters, limit: '200', offset: String(offset) });
+      if (['project_context', 'material_reads', 'workspace_reads', 'workspace_members'].includes(table)) query.delete('order');
+      const batch = await request(table + '?' + query, { signal });
+      if (!Array.isArray(batch)) throw new Error('The workspace returned an invalid response. Refresh to try again.');
+      result.push(...batch);
+      if (batch.length < 200) return result;
+      if (result.length >= 10000) throw new Error('This workspace is too large to load safely. Ask the team to archive older work.');
+    }
+  }
+  async function access(signal) {
+    await rpc('platum_accept_invitations', {}, signal);
+    const memberships = await rows('workspace_members', { user_id: 'eq.' + window.CLIENT_SPACE_AUTH_CONTEXT.user.id }, signal);
+    const workspaces = await rows('workspaces', {}, signal);
+    return workspaces.map(workspace => ({ ...workspace, role: memberships.find(m => m.workspace_id === workspace.id)?.role })).filter(w => w.role);
+  }
+  async function bundle(workspace, signal) {
+    const filter = { workspace_id: 'eq.' + workspace };
+    const names = ['project_context', 'tasks', 'requests', 'request_replies', 'materials', 'material_versions', 'material_comments',
+      'material_reviews', 'material_reads', 'forms', 'form_submissions', 'workspace_files', 'activity', 'decisions', 'workspace_reads', 'workspace_invitations', 'deliverables'];
+    const values = await Promise.all(names.map(name => rows(name, filter, signal)));
+    const people = await rpc('platum_members', { workspace_id: workspace }, signal);
+    return { ...Object.fromEntries(names.map((name, index) => [name, values[index]])), people };
+  }
+  async function team(action, workspace, payload, operation = crypto.randomUUID()) {
+    if (action && !serverValidated) await team();
+    let response;
+    try {
+      response = await fetch('/api/team', {
+        cache: 'no-store',
+        method: action ? 'POST' : 'GET',
+        headers: { Authorization: 'Bearer ' + await token(), ...(action ? { 'Content-Type': 'application/json' } : {}) },
+        body: action ? JSON.stringify({ action, workspace_id: workspace, payload, operation_id: operation }) : undefined,
+        signal: AbortSignal.timeout(30000),
+      });
+    } catch { throw new Error('Workspace management could not be reached. Your input is kept; try again.'); }
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || 'Workspace management is not available. Contact your administrator.');
+    if (!action && data.supabaseUrl !== base) throw new Error('The browser and server point to different workspaces. Contact your administrator.');
+    if (!action) serverValidated = true;
+    return data;
+  }
+  function mutate(action, workspace, payload, operation = crypto.randomUUID()) {
+    return rpc('platum_mutate', { action, workspace_id: workspace, payload, operation_id: operation });
+  }
+  async function upload(workspace, file, shared, progress) {
+    if (!progress.reservation) {
+      progress.reserveId ||= crypto.randomUUID();
+      progress.reservation = await mutate('file.reserve', workspace, {
+        name: file.name, mime_type: file.type || (/\.md$/i.test(file.name) ? 'text/markdown' : 'text/plain'),
+        size_bytes: file.size, client_visible: shared,
+      }, progress.reserveId);
+    }
+    const record = progress.reservation;
+    if (!progress.uploaded) {
+      let response;
+      try {
+        response = await fetch(base + '/storage/v1/object/platum-workspace-files/' + record.path, {
+          method: 'POST', headers: { ...await headers(), 'Content-Type': record.mime_type, 'x-upsert': 'false' }, body: file,
+          signal: AbortSignal.timeout(60000),
+        });
+      } catch { throw new Error('The upload was interrupted. Keep this page open and try again.'); }
+      if (!response.ok && response.status !== 409 && response.status !== 400) throw new Error('The file could not be uploaded. Try again.');
+      // A repeated immutable upload may report 400/409. The database still
+      // verifies the reserved object's size/type before making it readable.
+      progress.uploaded = true;
+    }
+    progress.finishId ||= crypto.randomUUID();
+    try { return await mutate('file.finish', workspace, { id: record.id }, progress.finishId); }
+    catch (error) { progress.uploaded = false; throw error; }
+  }
+  async function download(file) {
+    const response = await fetch(base + '/storage/v1/object/authenticated/platum-workspace-files/' + file.path, { cache: 'no-store', headers: await headers(), signal: AbortSignal.timeout(60000) });
+    if (!response.ok) throw new Error('This file is no longer available to your account.');
+    saveBlob(await response.blob(), file.name);
+  }
+  function saveBlob(blob, filename) {
+    const url = URL.createObjectURL(blob); const link = document.createElement('a');
+    link.href = url; link.download = filename; document.body.append(link); link.click(); link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+  async function exportWorkspace(workspace, format = 'markdown') {
+    const data = await rpc('platum_export', { workspace_id: workspace });
+    const filename = 'platum-workspace-' + new Date().toISOString().slice(0, 10);
+    if (format === 'json') return saveBlob(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }), filename + '.json');
+    const lines = ['# ' + data.workspace.name, '', 'Exported ' + data.exported_at, '', '## Our agreement', '', data.context?.objective || '',
+      ...Object.entries(data.context?.collaboration || {}).flatMap(([key,value])=>['', '### ' + key, '', value]),
+      '', '## Work', '', ...data.tasks.flatMap(t=>['### '+t.title,'',t.description,'','Status: '+t.status+(t.due_at?' · Due: '+t.due_at:''),'']),
+      '', '## Requests', '', ...data.requests.flatMap(r=>['### '+r.title,'',r.message,'',...data.replies.filter(x=>x.request_id===r.id).flatMap(x=>['Response · '+x.created_at,'',x.body,''])]),
+      '', '## Materials', '', ...data.materials.flatMap(m=>['### '+m.title+' · version '+m.number,'',m.summary,'',...m.blocks.flatMap(b=>['#### '+b.label,'',b.text||'',b.url||'',''])]),
+      '', '## Decisions', '', ...data.decisions.flatMap(d=>['### '+d.title,'',d.context,d.decision,'']),
+      '', '## Review history', '', ...data.reviews.flatMap(r=>[r.created_at+' · '+r.status,'',r.note||'','Version: '+r.version_id,'']),
+      '', '## Discussion history', '', ...data.comments.flatMap(c=>[c.created_at+' · Version: '+c.version_id+(c.block_id?' · Section: '+c.block_id:''),'',c.body,'']),
+      '', '## Submitted answers', '', ...data.submissions.flatMap(s=>['Form '+s.form_id+' · revision '+s.form_revision,'',...(s.definition_snapshot.fields||[]).flatMap(f=>[f.label,'',String(s.answers[f.id]??''),''])]),
+      '', '## Updates', '', ...data.activity.flatMap(a=>['### '+a.summary,'',a.created_at,'',a.metadata?.body||'','']),
+      '', '## Linked resources', '', ...[...(data.references||[]),...(data.deliverables||[])].flatMap(m=>[m.title,m.description||'',m.url||'','']),
+      '', '## Files', '', 'Download attachments separately from the workspace while you have access.', '', ...data.files.map(f=>'- '+f.name+' ('+f.size_bytes+' bytes)'),
+    ];
+    saveBlob(new Blob([lines.join('\n')], { type: 'text/markdown;charset=utf-8' }), filename + '.md');
+  }
+  async function queue(workspaces) {
+    if (!workspaces.length) return [];
+    const filter = { workspace_id: 'in.(' + workspaces.join(',') + ')' };
+    const [requests, submissions, materials, reviews, forms] = await Promise.all([
+      rows('requests', { ...filter, status: 'eq.waiting_team' }),
+      rows('form_submissions', { ...filter, status: 'eq.submitted' }),
+      rows('materials', filter), rows('material_reviews', filter), rows('forms', filter),
+    ]);
+    const latest = [...new Map(reviews.sort((a,b)=>a.created_at.localeCompare(b.created_at)).map(r=>[r.version_id+':'+r.reviewer_id,r])).values()];
+    return [
+      ...requests.map(r=>({ id:r.id,workspace_id:r.workspace_id,title:r.title,reason:'Client request',view:'request' })),
+      ...submissions.map(s=>({ id:s.form_id,workspace_id:s.workspace_id,title:forms.find(f=>f.id===s.form_id)?.title||'Questionnaire response',reason:'Response to review',view:'form' })),
+      ...latest.filter(r=>r.status==='changes_requested').flatMap(r=>{
+        const m=materials.find(m=>m.published_version_id===r.version_id);
+        return m?[{id:m.id,workspace_id:m.workspace_id,title:m.title,reason:'Changes requested',view:'material'}]:[];
+      }),
+    ];
+  }
+  window.PLATUM_DATA = Object.freeze({ access, bundle, team, mutate, upload, download, exportWorkspace, rpc, queue });
+})();

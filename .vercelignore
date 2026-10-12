@@ -1,0 +1,20 @@
+# Deploy only the application and server API; keep internal material local.
+.git/
+.vercel/
+.agents/
+.codex/
+.aws/
+.env*
+.DS_Store
+node_modules/
+bot/
+supabase/
+tests/
+scripts/
+docs/
+*client-space/
+tmp/
+outputs/
+*.md
+*.log
+*.pid

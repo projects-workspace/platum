@@ -91,6 +91,36 @@
     }
   }
 
+  let sessionRefreshFlight = null;
+  window.CLIENT_SPACE_ACCESS_TOKEN = async () => {
+    const context = window.CLIENT_SPACE_AUTH_CONTEXT;
+    if (!context || context.isLocalPreview || testWorkspaceActive) return null;
+    if (['localhost', '127.0.0.1'].includes(window.location.hostname) && config.testUser) return context.accessToken;
+    let session = readSession();
+    if (!session?.accessToken) return null;
+    if (session.expiresAt <= Date.now() + 60000) {
+      if (!sessionRefreshFlight) sessionRefreshFlight = refreshSession(session).finally(() => { sessionRefreshFlight = null; });
+      session = await sessionRefreshFlight;
+      if (!session) { clearSession(); showLogin('Your session expired. Sign in again to continue.'); return null; }
+    }
+    context.accessToken = session.accessToken;
+    return session.accessToken;
+  };
+  window.addEventListener('storage', (event) => {
+    if ([SESSION_KEY, LEGACY_SESSION_KEY].includes(event.key) && event.oldValue !== event.newValue) {
+      // A token refresh for the same account must not discard another tab's draft.
+      // Decoding here only detects account changes; it never grants authorization.
+      try {
+        const incoming = JSON.parse(event.newValue || 'null');
+        const part = incoming?.accessToken?.split('.')[1];
+        const claims = part ? JSON.parse(atob(part.replace(/-/g, '+').replace(/_/g, '/'))) : null;
+        if (claims?.sub === window.CLIENT_SPACE_AUTH_CONTEXT?.user?.id) return;
+      } catch { /* A missing or unrecognised session fails closed below. */ }
+      document.body.classList.remove('is-authenticated');
+      reloadWithoutWorkspaceHash();
+    }
+  });
+
   function saveSession(payload) {
     const expiresIn = Number(payload.expires_in || 3600);
     const session = {
@@ -269,6 +299,14 @@
       && (localPreviewClient === 'starter' || localAdminPreview);
 
     if (hasAuthRedirect) setPublicTestWorkspace(false);
+    if (redirectParams.has('error') || redirectParams.has('error_description')) {
+      clearSession();
+      clearSensitiveWorkspaceCache();
+      window.history.replaceState({}, '', window.location.pathname + window.location.search);
+      dom.emailForm.hidden = !hasAuthConfig;
+      showLogin('This sign-in link is invalid or has expired. Request a new link below, or contact your team.');
+      return;
+    }
 
     if (publicTestWorkspaceRequested()) {
       testWorkspaceActive = true;

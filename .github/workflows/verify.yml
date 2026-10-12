@@ -27,6 +27,9 @@ jobs:
       - name: Run repository integrity checks
         run: node scripts/check-integrity.js
 
+      - name: Verify workspace management authorization
+        run: node --test tests/team-api.test.js
+
       - name: Install Telegram worker dependencies
         run: npm ci --prefix bot
 

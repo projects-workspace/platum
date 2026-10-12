@@ -1087,6 +1087,7 @@
   async function init() {
     translateDocument();
     const authContext = await (window.CLIENT_SPACE_AUTH_READY || Promise.resolve({ clientId: 'starter', user: null }));
+    if (authContext?.accessToken && window.CLIENT_SPACE_CONFIG?.enableCollaboration !== false) return;
     activeAuthContext = authContext;
     try {
       workspaceAccess = window.CABINET_DATA

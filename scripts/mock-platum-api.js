@@ -208,11 +208,17 @@ function serveStatic(req, res, url) {
       supabasePublishableKey: 'mock-publishable-key',
       brandName: 'Platum',
       brandMark: 'P',
+      enableCollaboration: false,
       testUser: new URLSearchParams(window.location.search).get('test-user') || ''
     });`, 'application/javascript; charset=utf-8');
   }
 
   const relative = url.pathname === '/' ? 'client-space.html' : decodeURIComponent(url.pathname.slice(1));
+  if (relative.split('/').some((part) => part.startsWith('.'))
+    || !/\.(?:html|css|js|svg|png|jpe?g|webp)$/i.test(relative)
+    || /^(?:api|bot|scripts|supabase|tmp| client-space)\//.test(relative)) {
+    return send(res, 404, 'Not found', 'text/plain; charset=utf-8');
+  }
   const file = path.resolve(ROOT, relative);
   if (!file.startsWith(`${ROOT}${path.sep}`) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) return send(res, 404, 'Not found', 'text/plain; charset=utf-8');
   const type = { '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css', '.svg': 'image/svg+xml' }[path.extname(file)] || 'application/octet-stream';

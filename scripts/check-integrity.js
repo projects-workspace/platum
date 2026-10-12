@@ -61,6 +61,11 @@ const requiredFiles = [
   'client-space.i18n.js',
   'client-space.config.js',
   'cabinet-data.js',
+  'workspace-app.js',
+  'workspace-app.css',
+  'workspace-data.js',
+  'api/team.js',
+  'supabase/migrations/20261012163018_collaboration_workspace.sql',
   'agency-os.js',
   'agency-os.css',
   'client-space.css',
@@ -244,6 +249,10 @@ for (const [label, content] of [
 }
 
 check('public workspace bundles contain no known client markers', exposedMarkers.length === 0, exposedMarkers.join('; '));
+const collaborationSource = ['workspace-app.js', 'workspace-data.js'].map(file => fs.readFileSync(path.join(ROOT, file), 'utf8')).join('\n');
+check('collaboration browser code contains no administrative keys or private client seeds',
+  !/SUPABASE_SERVICE_ROLE_KEY|sb_secret_/.test(collaborationSource)
+    && !knownClientMarkers.some(marker => marker.test(collaborationSource)));
 check(
   'public client registry is empty until authenticated data is loaded',
   /const CLIENTS\s*=\s*Object\.freeze\(\{\}\);/.test(publicClientSource)
@@ -278,7 +287,7 @@ check(
 check(
   'authentication is invite-only and token-based test identities stay localhost-only',
   /^enable_signup\s*=\s*false/m.test(supabaseConfig)
-    && /\[auth\.email\][\s\S]*?enable_signup\s*=\s*false/.test(supabaseConfig)
+    && /\[auth\.email\][\s\S]*?enable_signup\s*=\s*true/.test(supabaseConfig)
     && /create_user:\s*false/.test(clientAuthSource)
     && /dom\.emailForm\.hidden\s*=\s*false/.test(clientAuthSource)
     && /invitation sent by your Platum administrator/i.test(clientHtml)

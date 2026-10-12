@@ -1058,6 +1058,7 @@
   async function init() {
     if (!root) return;
     const authContext = await (window.CLIENT_SPACE_AUTH_READY || Promise.resolve({ isAdmin: false }));
+    if (authContext?.accessToken && window.CLIENT_SPACE_CONFIG?.enableCollaboration !== false) return;
     activeAuthContext = authContext;
     const access = window.CABINET_DATA
       ? await window.CABINET_DATA.getWorkspaceAccess(authContext).catch(() => null)
