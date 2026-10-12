@@ -5,6 +5,7 @@ const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
 const handler = require('../api/team');
+const fileHandler = require('../api/files');
 const root = path.resolve(__dirname, '..');
 const host = '127.0.0.1';
 const port = Number(process.env.PLATUM_DEV_PORT || 4180);
@@ -20,6 +21,7 @@ const server = http.createServer(async (req,res) => {
   res.setHeader('X-Content-Type-Options','nosniff');
   res.setHeader('Content-Security-Policy',"default-src 'self'; connect-src 'self' "+backend.origin+"; font-src 'self' https://fonts.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob:; frame-ancestors 'none'");
   if (url.pathname === '/api/team') return handler(req,res);
+  if (url.pathname === '/api/files') return fileHandler(req,res);
   if (!['GET','HEAD'].includes(req.method)) { res.writeHead(405); return res.end(); }
   if (url.pathname === '/client-space.config.js') {
     res.setHeader('Content-Type','application/javascript');

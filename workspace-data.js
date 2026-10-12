@@ -135,7 +135,7 @@
     catch (error) { progress.uploaded = false; throw error; }
   }
   async function download(file) {
-    const response = await fetch(base + '/storage/v1/object/authenticated/platum-workspace-files/' + file.path, { cache: 'no-store', headers: await headers(), signal: AbortSignal.timeout(60000) });
+    const response = await fetch('/api/files?id=' + encodeURIComponent(file.id), { cache: 'no-store', headers: { Authorization: (await headers()).Authorization }, signal: AbortSignal.timeout(60000) });
     if (!response.ok) throw new Error('This file is no longer available to your account.');
     saveBlob(await response.blob(), file.name);
   }

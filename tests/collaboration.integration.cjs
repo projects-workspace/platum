@@ -28,7 +28,7 @@ async function upload(actor,w,text,shared=false){
   assert.equal(uploaded.ok,true,'Storage accepts an authorized reserved upload');
   return success(await mutate(actor,w,'file.finish',{id:f.id}),'Finalize private upload');
 }
-async function download(actor,f){return fetch(cfg.apiUrl+'/storage/v1/object/authenticated/platum-workspace-files/'+f.path,{headers:{apikey:cfg.anonKey,Authorization:'Bearer '+actor.session.access_token}});}
+async function download(actor,f){return fetch(cfg.appUrl+'/api/files?id='+f.id,{headers:{Authorization:'Bearer '+actor.session.access_token},cache:'no-store'});}
 (async()=>{
   await guard();
   await check('email sign-in remains available while public registration is disabled',async()=>{
@@ -88,6 +88,7 @@ async function download(actor,f){return fetch(cfg.apiUrl+'/storage/v1/object/aut
     assert.equal(success(await rows('material_versions',wa,a),'Published visibility').length,1);
     assert.equal(success(await raw('/rest/v1/material_versions?select=*&id=eq.'+firstVersion.id,{token:b.session.access_token}),'Direct foreign version').length,0);
     assert.equal((await download(a,sharedFile)).ok,true);
+    assert.equal((await fetch(cfg.apiUrl+'/storage/v1/object/authenticated/platum-workspace-files/'+sharedFile.path,{headers:{apikey:cfg.anonKey,Authorization:'Bearer '+a.session.access_token}})).ok,false,'Direct Storage cannot bypass the server access check');
     assert.equal((await fetch(cfg.apiUrl+'/storage/v1/object/public/platum-workspace-files/'+sharedFile.path)).ok,false,'Published attachments remain in a private bucket');
     assert.equal((await download(b,sharedFile)).ok,false);
     assert.equal((await download(a,internalFile)).ok,false);

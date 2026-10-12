@@ -23,11 +23,15 @@ Email authentication must be enabled while public signup is disabled. In the loc
 
 When a release is separately authorized:
 
-1. Verify the assigned Platum backend and delivery target. The implementation baseline is on codex/client-space-prototype; do not replace it with the older main branch.
+1. Verify the assigned Platum backend and delivery target. Stage 1 was preserved from codex/client-space-prototype and delivered by fast-forwarding main; do not replace that history with an older checkout.
 2. Apply the existing migrations and the collaboration migration to the intended Platum database using the normal migration path. Preserve existing records.
 3. Configure server variables, the email provider, and the exact callback allowlist. Invite the first operator through a trusted Auth administration path.
 4. Deliver the static application and its Node API together. The new interface requires the collaboration schema and reports missing configuration explicitly.
 5. Verify a real invited-user journey and private file access separately from local acceptance. Local test results do not establish hosted-provider or production status.
+
+The configured application origin is client-cabinet.vercel.app. Its deployment alias must be reassigned and verified after a release; the alternate platum-client-agency-workspace.vercel.app hostname redirects to it. A successful main push alone does not prove a Vercel publication. Check the deployed commit and served assets.
+
+Production SMTP is intentionally deferred. Do not treat the built-in Supabase email service or a successful owner-mailbox check as proof that arbitrary external clients can receive invitations. Configure and verify the intended sender before external-client email onboarding.
 
 The collaboration migration retains legacy material links, deliverables, project direction and milestones. Existing task-status and operator-reply RPC signatures remain available. New material versions are immutable; publication, reading and client decisions are separate records. New form responses preserve their question definitions; older unversioned responses remain intact.
 
@@ -35,7 +39,7 @@ The Vercel ignore file excludes private local folders, environment files, intern
 
 ## Files and publication
 
-The private platum-workspace-files bucket accepts documents and images up to 10 MB. Uploads reserve a unique immutable object path before transmission; completion checks the stored object's size and media type. Downloads use the current user's authorization, so workspace revocation also denies future authenticated downloads.
+The private platum-workspace-files bucket accepts documents and images up to 10 MB. Uploads reserve a unique immutable object path before transmission; completion checks the stored object's size and media type. Downloads go through api/files.js: it verifies the user, queries current file visibility under that user's RLS, and streams the authorized bytes with no-store response headers. Direct client Storage reads are denied. This boundary avoids continuing access through a previously cached Storage response after membership revocation. Bytes already downloaded by a user cannot be recalled.
 
 Team uploads start internal unless explicitly shared. Attaching a file to a shared request or published material grants access within that workspace. A material draft and its unshared attachments remain internal. These controls are not malware scanning or a rights-clearance service. Large source videos remain external links.
 
@@ -46,7 +50,7 @@ Shared-history exports are available as Markdown and JSON. The server projects c
 Run the existing integrity check and the focused Node authorization tests:
 
     node scripts/check-integrity.js
-    node --test tests/team-api.test.js bot/access-control.test.js
+    node --test tests/team-api.test.js tests/files-api.test.js tests/workspace-routing.test.js bot/access-control.test.js
 
 The original scripts/mock-platum-api.js remains a small legacy UI fixture. It does not verify the collaboration backend.
 
