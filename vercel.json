@@ -1,6 +1,12 @@
 {
   "redirects": [
     {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "platum-client-agency-workspace.vercel.app" }],
+      "destination": "https://client-cabinet.vercel.app/:path*",
+      "permanent": false
+    },
+    {
       "source": "/",
       "destination": "/client-space.html",
       "permanent": false

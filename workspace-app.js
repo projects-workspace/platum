@@ -308,10 +308,10 @@
     const content=document.getElementById('ws-content');
     if(state.loading){content.innerHTML='<div class="ws-loading" role="status">Opening your workspace…</div>';return;}
     if(state.editor){content.innerHTML=editorView();content.querySelector('h1')?.focus({preventScroll:true});return;}
+    if(state.view==='new-workspace'&&state.capabilities.canCreate){state.editor={type:'workspace'};content.innerHTML=editorView();return;}
     if(!state.active||!state.data){content.innerHTML=heading('Your workspaces','Your account is signed in.')+
       empty('No workspace access yet',state.capabilities.canCreate?'Create your first shared workspace to begin.':'Ask your team to invite this email. An invitation may have expired or been revoked.')+
       (state.capabilities.canCreate?button('new-workspace','Create workspace','','ws-button ws-primary'):'')+button('refresh','Check again');return;}
-    if(state.view==='new-workspace'){state.editor={type:'workspace'};content.innerHTML=editorView();return;}
     if(state.view==='settings'&&operator()){state.editor={type:'settings'};content.innerHTML=editorView();return;}
     if(state.view==='team'){teamView();return;}
     const views={home:homeView,work:workView,request:requestView,context:contextView,material:materialView,forms:formsView,form:formView,files:filesView,updates:updatesView,members:membersView,
