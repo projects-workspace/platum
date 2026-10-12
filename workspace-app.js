@@ -67,6 +67,7 @@
     document.getElementById('sync-note').hidden = true;
   }
   function navigation() {
+    root.querySelector('[data-action="export"]').hidden = !state.active;
     document.getElementById('ws-workspace-select').innerHTML = state.workspaces.map(w => '<option value="' + w.id + '"' + (w.id === state.active?.id ? ' selected' : '') + '>' + escape(w.name) + '</option>').join('') || '<option>No workspace yet</option>';
     const modules = state.active?.settings?.modules || Object.keys(labels);
     let items = modules.filter(k => labels[k]).map(k => '<a href="#' + k + '" class="' + (state.view === k || state.view === 'material' && k === 'materials' || state.view === 'request' && k === 'work' || state.view === 'form' && k === 'forms' ? 'is-current' : '') + '">' +
@@ -454,7 +455,7 @@
     try {
       if(action==='open-inbox-item'){if(!discard())return;state.view=control.dataset.view;state.detail=id;state.version=null;history.replaceState({},'',location.pathname+location.search+'#'+state.view+'/'+id);await refresh(control.dataset.workspace);return;}
       if(action==='download'){await api.download(d.workspace_files.find(f=>f.id===id));return;}
-      if(action==='export'){await api.exportWorkspace(state.active.id,control.dataset.format||'markdown');notice('Shared history downloaded. Files can be downloaded separately.');return;}
+      if(action==='export'){if(!state.active){notice('Open a workspace before downloading its shared history.',true);return;}await api.exportWorkspace(state.active.id,control.dataset.format||'markdown');notice('Shared history downloaded. Files can be downloaded separately.');return;}
       let command,payload;
       if(action==='complete-task'){const t=d.tasks.find(t=>t.id===id);command='task.complete';payload={id,revision:t.revision,status:t.status==='completed'?'open':'completed'};}
       if(action==='publish-material'){const m=d.materials.find(m=>m.id===id);command='material.publish';payload={id,revision:m.revision,version_id:control.dataset.version};}
