@@ -81,6 +81,16 @@ async function invite(w,actor,role='client'){
     denied(await command(client,wa,'calendar.propose',proposal,op),'FORBIDDEN');
     denied(await rpc('platum_export',{workspace_id:wa},client.session.access_token),'FORBIDDEN');
   });
+  await check('only the team can complete a confirmed event after its end, with a retry-safe history record',async()=>{
+    const past=success(await command(owner,wb,'calendar.propose',{...proposal,title:'Completed local review',starts_at:new Date(now-7200000).toISOString(),ends_at:new Date(now-3600000).toISOString()}),'Past local proposal');
+    const confirmed=success(await command(other,wb,'calendar.respond',{id:past.event.id,revision:past.event.revision,version_id:past.version.id,response:'confirmed'}),'Confirm past event');
+    const payload={id:confirmed.id,revision:confirmed.revision,version_id:past.version.id,note:'Review completed.'},op=randomUUID();
+    denied(await command(other,wb,'calendar.complete',payload),'FORBIDDEN');
+    const completed=success(await command(owner,wb,'calendar.complete',payload,op),'Complete confirmed event');assert.equal(completed.status,'completed');
+    assert.deepEqual(success(await command(owner,wb,'calendar.complete',payload,op),'Retry completion'),completed);
+    const history=success(await rows('calendar_responses',wb,other),'Completion history');assert.equal(history.filter(r=>r.response==='completed').length,1);
+    denied(await command(owner,wb,'calendar.propose',{...proposal,id:completed.id,revision:completed.revision}),'EVENT_CLOSED');
+  });
   cfg.calendarFixture={workspaceA:wa,workspaceB:wb};fs.writeFileSync(process.env.PLATUM_TEST_CONFIG,JSON.stringify(cfg,null,2),{mode:0o600});
   fs.writeFileSync(process.env.PLATUM_CALENDAR_REPORT||'/private/tmp/platum-calendar-results.json',JSON.stringify({scope:'disposable local Supabase',passed},null,2));
   console.log(passed.length+' calendar integration groups passed.');
