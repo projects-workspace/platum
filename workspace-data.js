@@ -24,6 +24,23 @@
     INVALID_FILENAME: 'Rename the file without slashes or control characters, then try again.',
     NOT_FOUND: 'This item is no longer available. Refresh the workspace.',
     IDEMPOTENCY_CONFLICT: 'This action changed while being saved. Refresh and try again.',
+    INVALID_TIMEZONE: 'Use a valid IANA time zone, such as Europe/Prague or America/New_York.',
+    INVALID_EVENT_TIME: 'Choose an end after the start. Events can last up to seven days and start within the next five years.',
+    EVENT_CLOSED: 'This event has changed or is closed. Load its latest proposal.',
+    EVENT_NOT_FINISHED: 'Only a confirmed event whose end time has passed can be marked completed.',
+    OTHER_SIDE_REQUIRED: 'The other side of the workspace must confirm this proposal.',
+    INVALID_AVAILABILITY: 'Check the working hours and unavailable dates. Each end must follow its start.',
+    INVALID_SHARED_REFERENCE: 'Choose a shared task or published material from this workspace. Its access may have changed.',
+    PRACTICE_PENDING: 'Your practice is already waiting for team feedback. You can submit another attempt after review.',
+    PRACTICE_NOT_SUBMITTED: 'This practice has already been reviewed or has not been submitted. Load its latest state.',
+    EMPTY_INSPIRATION: 'Add a reference link, notes, or both.',
+    USE_LEARNING_EDITOR: 'Open this practice in Learning and save its lesson before publishing.',
+    USE_REPORT_EDITOR: 'Publish this report through Progress & reports so its evidence is saved with the publication.',
+    MILESTONE_TASKS_OPEN: 'Complete the linked tasks before marking this milestone completed.',
+    INVALID_REPORT_PERIOD: 'Choose a reporting period of up to one year, with the end on or after its start.',
+    INVALID_METRIC_DATE: 'Give the actual observation date for each metric; it cannot be in the future.',
+    REPORT_INCOMPLETE: 'Describe what changed and the next agreed action before publishing.',
+    METRICS_UNVERIFIED: 'Check each metric against its source and mark it verified before publishing.',
   };
   async function token() {
     const value = window.CLIENT_SPACE_ACCESS_TOKEN
@@ -82,10 +99,14 @@
   async function bundle(workspace, signal) {
     const filter = { workspace_id: 'eq.' + workspace };
     const names = ['project_context', 'tasks', 'requests', 'request_replies', 'materials', 'material_versions', 'material_comments',
-      'material_reviews', 'material_reads', 'forms', 'form_submissions', 'workspace_files', 'activity', 'decisions', 'workspace_reads', 'workspace_invitations', 'deliverables'];
+      'material_reviews', 'material_reads', 'forms', 'form_submissions', 'workspace_files', 'activity', 'decisions', 'workspace_reads', 'workspace_invitations', 'deliverables',
+      'calendar_events', 'calendar_versions', 'calendar_responses', 'workspace_availability',
+      'learning_units', 'learning_versions', 'learning_submissions', 'learning_feedback', 'inspiration_items', 'inspiration_comments',
+      'work_milestones', 'milestone_history', 'period_reports', 'report_publications', 'template_applications'];
     const values = await Promise.all(names.map(name => rows(name, filter, signal)));
     const people = await rpc('platum_members', { workspace_id: workspace }, signal);
-    return { ...Object.fromEntries(names.map((name, index) => [name, values[index]])), people };
+    const templates = await rows('workspace_templates', {}, signal);
+    return { ...Object.fromEntries(names.map((name, index) => [name, values[index]])), people, workspace_templates:templates };
   }
   async function team(action, workspace, payload, operation = crypto.randomUUID()) {
     if (action && !serverValidated) await team();
@@ -106,7 +127,10 @@
     return data;
   }
   function mutate(action, workspace, payload, operation = crypto.randomUUID()) {
-    return rpc('platum_mutate', { action, workspace_id: workspace, payload, operation_id: operation });
+    const regular = action === 'workspace.save' || action.startsWith('calendar.') || action === 'availability.save';
+    const learning = action.startsWith('learning.') || action.startsWith('inspiration.');
+    const progress = ['milestone.','report.','template.'].some(prefix=>action.startsWith(prefix));
+    return rpc(regular ? 'platum_regular_mutate' : learning ? 'platum_learning_mutate' : progress ? 'platum_progress_mutate' : 'platum_mutate', { action, workspace_id: workspace, payload, operation_id: operation });
   }
   async function upload(workspace, file, shared, progress) {
     if (!progress.reservation) {
@@ -160,19 +184,41 @@
       '', '## Updates', '', ...data.activity.flatMap(a=>['### '+a.summary,'',a.created_at,'',a.metadata?.body||'','']),
       '', '## Linked resources', '', ...[...(data.references||[]),...(data.deliverables||[])].flatMap(m=>[m.title,m.description||'',m.url||'','']),
       '', '## Files', '', 'Download attachments separately from the workspace while you have access.', '', ...data.files.map(f=>'- '+f.name+' ('+f.size_bytes+' bytes)'),
+      '', '## Calendar history', '', ...(data.calendar_events||[]).flatMap(event=>[
+        '### Event '+event.id+' · '+event.status,'',...(data.calendar_versions||[]).filter(v=>v.event_id===event.id).sort((a,b)=>a.number-b.number).flatMap(v=>[
+          '#### '+v.title+' · proposal '+v.number,'',v.starts_at+' – '+v.ends_at+' · '+v.timezone,'',v.agenda,v.location,'',
+          ...(data.calendar_responses||[]).filter(r=>r.version_id===v.id).flatMap(r=>[r.created_at+' · '+r.response,'',r.note,''])])]),
+      '', '## Shared availability', '', ...(data.availability||[]).flatMap(a=>[a.user_id+' · '+a.timezone,'',a.note,
+        ...(a.weekly||[]).map(s=>['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][s.day]+' '+s.start+'–'+s.end),
+        ...(a.unavailable||[]).map(s=>'Unavailable: '+s.start+' – '+s.end),'']),
+      '', '## Learning and practice', '', ...(data.learning_versions||[]).flatMap(v=>['### '+v.lesson.title+' · lesson version '+v.lesson.number,'',v.lesson.summary,'',...v.lesson.blocks.flatMap(b=>['#### '+b.label,'',b.text,'']),
+        ...(data.learning_submissions||[]).filter(s=>s.version_id===v.id).flatMap(s=>['Attempt '+s.attempt+' · '+s.author_id+' · '+s.status,'',s.answer,s.evidence_url,'',
+          ...(data.learning_feedback||[]).filter(f=>f.submission_id===s.id).flatMap(f=>['Feedback · '+f.outcome,'',f.body,''])])]),
+      '', '## Inspiration', '', ...(data.inspiration||[]).flatMap(i=>['### '+i.title,'',i.url,i.note,'',i.relevance,'',
+        ...(data.inspiration_comments||[]).filter(c=>c.item_id===i.id).flatMap(c=>['Comment on revision '+c.item_revision+' · '+c.created_at,'',c.body,''])]),
+      '', '## Milestones', '', ...(data.milestones||[]).flatMap(m=>['### '+m.title,'',m.status,m.description,m.completion_note,'']),
+      '', '## Milestone history', '', ...(data.milestone_history||[]).flatMap(h=>[h.created_at+' · '+h.snapshot.title+' · '+h.snapshot.status,'',h.snapshot.completion_note||h.snapshot.description,'']),
+      '', '## Period report snapshots', '', ...(data.reports||[]).flatMap(p=>['### '+p.snapshot.title,'',p.snapshot.starts_on+' – '+p.snapshot.ends_on+' · '+p.snapshot.timezone,'',p.snapshot.summary,p.snapshot.outcomes,p.snapshot.blockers,p.snapshot.next_step,'',
+        ...p.snapshot.metrics.flatMap(m=>[m.name+': '+m.value+' '+m.unit,'Source: '+m.source,m.source_url,'Observed: '+m.observed_on,'']),
+        'Completed tasks at publication:',...p.snapshot.completed_tasks.map(t=>'- '+t.title+' · '+t.completed_at),'',
+        'Selected results:',...p.snapshot.results.map(v=>'- '+v.title+' · version '+v.number),'']),
     ];
     saveBlob(new Blob([lines.join('\n')], { type: 'text/markdown;charset=utf-8' }), filename + '.md');
   }
   async function queue(workspaces) {
     if (!workspaces.length) return [];
     const filter = { workspace_id: 'in.(' + workspaces.join(',') + ')' };
-    const [requests, submissions, materials, reviews, forms] = await Promise.all([
+    const [requests, submissions, materials, reviews, forms, events, proposals, practices, units, lessons] = await Promise.all([
       rows('requests', { ...filter, status: 'eq.waiting_team' }),
       rows('form_submissions', { ...filter, status: 'eq.submitted' }),
       rows('materials', filter), rows('material_reviews', filter), rows('forms', filter),
+      rows('calendar_events', {...filter,status:'eq.proposed'}), rows('calendar_versions', filter),
+      rows('learning_submissions',{...filter,status:'eq.submitted'}),rows('learning_units',filter),rows('learning_versions',filter),
     ]);
     const latest = [...new Map(reviews.sort((a,b)=>a.created_at.localeCompare(b.created_at)).map(r=>[r.version_id+':'+r.reviewer_id,r])).values()];
     return [
+      ...events.flatMap(event=>{const v=proposals.find(v=>v.id===event.current_version_id&&v.proposed_side==='client');return v?[{id:event.id,workspace_id:event.workspace_id,title:v.title,reason:'Time to confirm',view:'event'}]:[];}),
+      ...practices.flatMap(s=>{const v=lessons.find(v=>v.id===s.version_id),unit=units.find(l=>l.id===v?.unit_id),m=materials.find(m=>m.id===unit?.material_id);return unit?[{id:unit.id,workspace_id:unit.workspace_id,title:m?.title||'Practice response',reason:'Practice to review',view:'lesson'}]:[];}),
       ...requests.map(r=>({ id:r.id,workspace_id:r.workspace_id,title:r.title,reason:'Client request',view:'request' })),
       ...submissions.map(s=>({ id:s.form_id,workspace_id:s.workspace_id,title:forms.find(f=>f.id===s.form_id)?.title||'Questionnaire response',reason:'Response to review',view:'form' })),
       ...latest.filter(r=>r.status==='changes_requested').flatMap(r=>{
@@ -181,5 +227,5 @@
       }),
     ];
   }
-  window.PLATUM_DATA = Object.freeze({ access, bundle, team, mutate, upload, download, exportWorkspace, rpc, queue });
+  window.PLATUM_DATA = Object.freeze({ access, bundle, team, mutate, upload, download, exportWorkspace, rpc, queue, saveBlob });
 })();

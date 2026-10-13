@@ -1,6 +1,6 @@
 # Collaboration setup and verification
 
-This guide covers the authenticated Stage 1 workspace. Current implementation and verification status belong in the root PROJECT_STATE.md.
+This guide covers the authenticated collaboration workspace and the Stage 2 modules. Current implementation and verification status belong in the root PROJECT_STATE.md.
 
 ## Server configuration
 
@@ -24,7 +24,7 @@ Email authentication must be enabled while public signup is disabled. In the loc
 When a release is separately authorized:
 
 1. Verify the assigned Platum backend and delivery target. Stage 1 was preserved from codex/client-space-prototype and delivered by fast-forwarding main; do not replace that history with an older checkout.
-2. Apply the existing migrations and the collaboration migration to the intended Platum database using the normal migration path. Preserve existing records.
+2. Apply the existing migrations and the collaboration/Stage 2 migrations to the intended Platum database using the normal migration path. Preserve existing records. The calendar, learning/inspiration, and progress/report/template migrations must precede their frontend.
 3. Configure server variables, the email provider, and the exact callback allowlist. Invite the first operator through a trusted Auth administration path.
 4. Deliver the static application and its Node API together. The new interface requires the collaboration schema and reports missing configuration explicitly.
 5. Verify a real invited-user journey and private file access separately from local acceptance. Local test results do not establish hosted-provider or production status.
@@ -45,12 +45,22 @@ Team uploads start internal unless explicitly shared. Attaching a file to a shar
 
 Shared-history exports are available as Markdown and JSON. The server projects client-visible records even when the exporter is an operator; credentials, pending invitations and internal material drafts are excluded. Attached file bytes are downloaded separately while access is valid.
 
+## Regular collaboration modules
+
+Calendar proposals belong to the shared workspace. The other side confirms a proposal; changing its time creates a new proposal and resets confirmation. Earlier proposals, decisions and discussion remain readable. Availability is shared guidance, with each member maintaining their own time zone, weekly windows and unavailable dates. Event/calendar downloads are ICS files; no external calendar synchronization is configured. Ambiguous or nonexistent daylight-saving wall times require a different time.
+
+Learning uses material publications for short lessons, attachments and discussion. Practice drafts are private to their author. Submission shares the answer with the team; team feedback either completes the attempt or invites another one. New lesson versions do not inherit completion. Inspiration can be shared by either side; team drafts remain internal, and comments keep a snapshot of the referenced revision.
+
+Milestones are shared outcomes tied to work and published results. Period reports start as internal drafts and publish a frozen snapshot with source-backed metrics, selected results, milestones and dated completed tasks. Each metric must be explicitly verified by the publishing operator. Existing tasks with no completion date are excluded from dated task totals; later edits do not rewrite published reports. Discussion and review use the report's material version.
+
+Templates are team-only reusable definitions. Create them deliberately in an assigned workspace, then create/select a destination workspace and open Templates there. Application checks operator access to both spaces, adds material/form/learning drafts and optionally applies the authored configuration. Review and adapt the new drafts before publishing. Client history, membership and file objects are not copied. The saved application receipt links every created draft. Retrying the unchanged operation does not create duplicate records.
+
 ## Local checks
 
 Run the existing integrity check and the focused Node authorization tests:
 
     node scripts/check-integrity.js
-    node --test tests/team-api.test.js tests/files-api.test.js tests/workspace-routing.test.js bot/access-control.test.js
+    node --test tests/team-api.test.js tests/files-api.test.js tests/workspace-routing.test.js tests/calendar-domain.test.js bot/access-control.test.js
 
 The original scripts/mock-platum-api.js remains a small legacy UI fixture. It does not verify the collaboration backend.
 
@@ -72,5 +82,16 @@ The fixture step creates only synthetic users. Repeat a failed full scenario wit
 The browser suite uses Playwright supplied by the local runtime or the caller's NODE_PATH. It uses separate browser contexts and real local Auth tokens, without borrowing a user's signed-in Chrome profile.
 
     node tests/collaboration.browser.cjs
+
+With the same guarded local configuration, verify the Stage 2 areas:
+
+    node tests/calendar.integration.cjs
+    node tests/learning.integration.cjs
+    node tests/progress.integration.cjs
+    node tests/calendar.browser.cjs
+    node tests/learning.browser.cjs
+    node tests/progress.browser.cjs
+
+Each Stage 2 suite, and each original browser run, creates an isolated synthetic operator and participants through the local-only fixture helper. This avoids competition for the normal per-operator invitation quota. The helper verifies loopback URLs and the disposable database guard before using local Auth administration or the local service-only bootstrap command. Production invitation limits are not modified. Browser scripts require PLATUM_BROWSER_OUTPUT outside the repository; use separate directories per suite. Keep generated credentials, sessions, downloads and screenshots outside Git.
 
 Stop only the local server and disposable Supabase instance created for the check. Keep all other projects and private client material untouched.

@@ -43,4 +43,14 @@ async function createUser(name) {
   const session=success(await raw('/auth/v1/token?grant_type=password',{body:{email,password}}),'Sign in local Auth fixture');
   return {id:result.id,email,password,session};
 }
-module.exports={cfg,raw,rpc,mutate,team,rows,guard,success,createUser,randomUUID};
+async function createSuiteUsers(prefix) {
+  await guard();
+  const users={};
+  for(const name of ['Owner','Teammate','ClientA','ClientB','Outsider'])users[name]=await createUser(prefix+name);
+  // Bootstrap only an isolated local fixture owner. Each suite then exercises
+  // the normal HTTP boundary without sharing another suite's invitation quota.
+  success(await rpc('platum_service_command',{action:'workspace.create',actor_id:users.Owner.id,workspace_id:null,
+    payload:{name:prefix+' fixture bootstrap'},operation_id:randomUUID()},null,true),'Bootstrap local suite owner');
+  return users;
+}
+module.exports={cfg,raw,rpc,mutate,team,rows,guard,success,createUser,createSuiteUsers,randomUUID};

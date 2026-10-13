@@ -2,7 +2,7 @@
   'use strict';
   const root = document.getElementById('workspace-app');
   const api = window.PLATUM_DATA;
-  const labels = { home: 'Overview', work: 'Work & requests', context: 'Our agreement', materials: 'Materials', forms: 'Questions for you', files: 'Files', updates: 'Updates' };
+  const labels = { home: 'Overview', work: 'Work & requests', calendar: 'Calendar', learning: 'Learning & practice', inspiration: 'Inspiration', reports: 'Progress & reports', context: 'Our agreement', materials: 'Materials', forms: 'Questions for you', files: 'Files', updates: 'Updates' };
   const icons = {
     home: '<path d="m3 10 9-7 9 7v10H3Z"/><path d="M9 20v-7h6v7"/>',
     work: '<rect x="4" y="4" width="16" height="17" rx="2"/><path d="m8 12 2 2 5-5M8 17h8"/>',
@@ -11,6 +11,10 @@
     forms: '<path d="M8 3h8v4H8Z"/><path d="M8 5H5v16h14V5h-3M8 12h8M8 16h5"/>',
     files: '<path d="M3 7h7l2 3h9v10H3Z"/><path d="M3 7V4h7l2 3h7v3"/>',
     updates: '<path d="M5 5h14v12H9l-4 4Z"/><path d="M8 9h8M8 13h5"/>',
+    calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 11h18M7 15h3M14 15h3"/>',
+    learning: '<path d="M12 5v16M3 4h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5v15h-5a4 4 0 0 0-4 2 4 4 0 0 0-4-2H3Z"/>',
+    inspiration: '<path d="M8 15a7 7 0 1 1 8 0v3H8ZM8 21h8M12 2V0"/>',
+    reports: '<path d="M4 3h16v18H4ZM8 16v-4M12 16V8M16 16v-6"/>',
   };
   const state = { workspaces: [], active: null, data: null, editor: null, capabilities: { canCreate: false }, view: 'home', detail: null, version: null, loading: false, generation: 0, controller: null };
   const inlineDrafts = new Map();
@@ -50,6 +54,8 @@
   const fileList = ids => (ids || []).map(id => state.data.workspace_files.find(f => f.id === id)).filter(Boolean).map(f => button('download', f.name, 'data-id="' + f.id + '"', 'ws-file-link')).join('');
   const filesPicker = ids => '<fieldset class="ws-files-picker"><legend>Attach existing files</legend><p class="ws-help">Files attached to a request or published material are shared with this workspace.</p>' +
     (state.data.workspace_files.filter(f => f.status === 'ready').map(f => check(f.name, 'file:' + f.id, (ids || []).includes(f.id))).join('') || '<p>No uploaded files yet. Add them in Files.</p>') + '</fieldset>';
+  const featureContext = {state,api,escape,heading,button,field,select,check,formFoot,person,date,operator,user,badge,empty,paragraphs,link,external,edit,render,filesPicker,questionEditor};
+  const features = [window.PLATUM_CALENDAR_UI(featureContext),window.PLATUM_LEARNING_UI(featureContext),window.PLATUM_PROGRESS_UI(featureContext)];
 
   function notice(message, error = false) {
     const node = document.getElementById('ws-notice'); node.textContent = message; node.classList.toggle('is-error', error); node.hidden = false;
@@ -70,10 +76,11 @@
     root.querySelector('[data-action="export"]').hidden = !state.active;
     document.getElementById('ws-workspace-select').innerHTML = state.workspaces.map(w => '<option value="' + w.id + '"' + (w.id === state.active?.id ? ' selected' : '') + '>' + escape(w.name) + '</option>').join('') || '<option>No workspace yet</option>';
     const modules = state.active?.settings?.modules || Object.keys(labels);
-    let items = modules.filter(k => labels[k]).map(k => '<a href="#' + k + '" class="' + (state.view === k || state.view === 'material' && k === 'materials' || state.view === 'request' && k === 'work' || state.view === 'form' && k === 'forms' ? 'is-current' : '') + '">' +
+    let items = modules.filter(k => labels[k]).map(k => '<a href="#' + k + '" class="' + (state.view === k || state.view === 'material' && k === 'materials' || state.view === 'request' && k === 'work' || state.view === 'form' && k === 'forms' || ['event','availability'].includes(state.view) && k === 'calendar' || state.view==='lesson' && k==='learning' || state.view==='inspiration-item' && k==='inspiration' || ['report','milestone'].includes(state.view)&&k==='reports' ? 'is-current' : '') + '">' +
       '<svg viewBox="0 0 24 24" aria-hidden="true">' + icons[k] + '</svg><span>' + labels[k] + '</span></a>').join('');
     if (state.workspaces.some(w => ['owner','admin','team'].includes(w.role))) items += '<div class="ws-nav-divider"></div><a href="#team"' + (state.view === 'team' ? ' class="is-current"' : '') + '>Team inbox</a>';
     if (operator()) items += '<a href="#settings"' + (state.view === 'settings' ? ' class="is-current"' : '') + '>Workspace settings</a>';
+    if (operator()) items += '<a href="#templates"' + (state.view === 'templates' ? ' class="is-current"' : '') + '>Templates</a>';
     if (manager()) items += '<a href="#members"' + (state.view === 'members' ? ' class="is-current"' : '') + '>People & access</a>';
     if (state.capabilities.canCreate) items += '<a href="#new-workspace">Create workspace</a>';
     document.getElementById('ws-nav').innerHTML = items;
@@ -236,6 +243,7 @@
   }
   function editorView() {
     const e=state.editor,d=state.data||{},item=e.item||{};
+    for(const feature of features){const content=feature.editor?.(e);if(content!==null&&content!==undefined)return content;}
     if(e.type==='workspace')return heading('Create a workspace','Start with a reusable shared workspace.')+'<form class="ws-form ws-reading" data-form="workspace">'+field('Workspace name','name','',{required:true,max:120})+formFoot('Create workspace')+'</form>';
     if(e.type==='request')return heading('What would you like help with?','Share the idea, question, or situation. The team will help define the work.')+
       '<form class="ws-form ws-reading" data-form="request">'+field('Short title','title','',{required:true,max:160})+field('Tell us what you need','message','',{required:true,multiline:true,max:5000})+
@@ -270,6 +278,7 @@
       const ws=state.active,c=d.project_context[0]||{},a=c.collaboration||{},modules=ws.settings?.modules||Object.keys(labels),all=[...modules,...Object.keys(labels).filter(k=>!modules.includes(k))];
       return heading('Workspace settings','Keep the experience relevant to this client.')+'<form class="ws-form ws-reading" data-form="settings" data-revision="'+ws.revision+'">'+
         '<div class="ws-form-grid">'+field('Workspace name','name',ws.name,{required:true,max:120})+select('Accent','accent',[['forest','Forest'],['slate','Slate'],['clay','Clay']],ws.settings?.accent||'forest')+'</div>'+
+        field('Default time zone','timezone',ws.settings?.timezone||'UTC',{required:true,max:100,help:'An IANA zone such as Europe/Prague. Members can set their own display zone in Availability.'})+
         field('Welcome message','welcome',ws.settings?.welcome,{multiline:true,rows:2,max:2000})+field('Short project description','description',ws.description,{multiline:true,max:5000})+
         field('Current focus','focus',ws.current_focus,{max:500})+field('Current phase','phase',ws.current_phase,{max:160})+
         field('Agreed goal','objective',c.objective,{multiline:true,max:5000})+field('Current scope','scope',a.scope,{multiline:true,max:5000})+
@@ -318,7 +327,8 @@
     const views={home:homeView,work:workView,request:requestView,context:contextView,material:materialView,forms:formsView,form:formView,files:filesView,updates:updatesView,members:membersView,
       materials:()=>heading('Materials','Ideas, recommendations and results, with room for your feedback.',operator()?button('edit-material','Create material','','ws-button ws-primary'):'')+
         (state.data.materials.length?materialList(state.data.materials):empty('Your shared reference point','Published recommendations and results will appear here.'))+(state.data.deliverables.length?'<section class=\"ws-section\"><h2>Delivered resources</h2>'+state.data.deliverables.map(d=>'<article class=\"ws-material-row\"><div><h3>'+external(d.url,d.title)+'</h3>'+paragraphs(d.description)+'</div></article>').join('')+'</section>':'')};
-    content.innerHTML=(views[state.view]||homeView)();
+    for(const feature of features)Object.assign(views,feature.views);
+    content.innerHTML=(views[state.view]||homeView)()+(state.view==='home'?features.map(f=>f.home?.()||'').join(''):'');
     for(const form of content.querySelectorAll('form[data-form]')) {
       const saved=inlineDrafts.get(draftKey(form));
       if(saved){for(const [name,value] of saved){const input=form.elements.namedItem(name);if(input&&input.type!=='file')input.value=value;}const details=form.closest('details');if(details)details.open=true;state.editorDirty=true;}
@@ -411,8 +421,9 @@
       if(type==='review'){action='material.review';payload={version_id:form.dataset.version,status:'changes_requested',note:value('note')};}
       if(type==='update'){action='update.publish';payload={title:value('title'),body:value('body')};}
       if(type==='decision'){action='decision.record';payload={title:value('title'),context:value('context'),decision:value('decision')};}
-      if(type==='settings'){action='workspace.save';payload={revision,...Object.fromEntries(['name','welcome','description','focus','phase','objective','scope','roles','rhythm','boundaries','next_step','accent'].map(k=>[k,value(k)])),
+      if(type==='settings'){action='workspace.save';payload={revision,...Object.fromEntries(['name','welcome','description','focus','phase','objective','scope','roles','rhythm','boundaries','next_step','accent','timezone'].map(k=>[k,value(k)])),
         modules:[...form.querySelectorAll('[data-module]')].filter(li=>li.dataset.module==='home'||li.querySelector('input').checked).map(li=>li.dataset.module)};}
+      for(const feature of features){const command=feature.form?.(form,data,value,submitter);if(command){action=command.action;payload=command.payload;break;}}
       if(!action)throw new Error('This form is not available.');
       result=await api.mutate(action,state.active.id,payload,operationFor(form,payload));
       inlineDrafts.delete(draftKey(form));
@@ -421,6 +432,7 @@
       if(type==='request'){state.view='request';state.detail=result.id;history.replaceState({},'',location.pathname+location.search+'#request/'+state.detail);}
       if(type==='form'){state.view='forms';history.replaceState({},'',location.pathname+location.search+'#forms');}
       if(type==='settings'){state.view='context';history.replaceState({},'',location.pathname+location.search+'#context');}
+      for(const feature of features)feature.afterSave?.(type,result);
       await refresh();
       notice(type==='material'?'Internal draft saved. Publish this version when it is ready.':type==='submission'&&payload.status==='draft'?'Your draft is saved. It has not been sent to the team.':'Saved.');
     }catch(error){formError(form,error);}
@@ -433,12 +445,13 @@
       'new-workspace':()=>edit('workspace'),'new-request':()=>edit('request'),'edit-task':()=>edit('task',d.tasks.find(t=>t.id===id)||{}),
       'task-from-request':()=>edit('task',{request_id:id,title:d.requests.find(r=>r.id===id)?.title||''}),
       'triage-request':()=>edit('triage',d.requests.find(r=>r.id===id)),
-      'edit-material':()=>{const m=d.materials.find(m=>m.id===id)||{};edit('material',m,{version:d.material_versions.find(v=>v.id===(m.draft_version_id||m.published_version_id))});},
+      'edit-material':()=>{const m=d.materials.find(m=>m.id===id)||{};const lesson=d.learning_units.find(l=>l.material_id===m.id);if(lesson){edit('learning',lesson);return;}const report=d.period_reports.find(r=>r.material_id===m.id);if(report){edit('report',report);return;}edit('material',m,{version:d.material_versions.find(v=>v.id===(m.draft_version_id||m.published_version_id))});},
       'edit-form':()=>edit('form',d.forms.find(f=>f.id===id)||{}),'invite-person':()=>edit('invite'),'upload-file':()=>edit('upload'),
       'publish-update':()=>edit('update'),'record-decision':()=>edit('decision'),'settings':()=>edit('settings'),
       'request-changes':()=>edit('review',{}, {versionId:control.dataset.version}),
     };
     if(editors[action]){editors[action]();return;}
+    for(const feature of features)if(feature.localAction?.(action,control))return;
     if(action==='menu'){const open=root.classList.toggle('ws-menu-open');control.setAttribute('aria-expanded',String(open));return;}
     if(action==='cancel-editor'){if(discard()){state.editor=null;state.editorDirty=false;if(['settings','new-workspace'].includes(state.view))state.view='home';render();}return;}
     if(action==='add-block'){control.closest('form').querySelector('[data-block-editors]').insertAdjacentHTML('beforeend',blockEditor());state.editorDirty=true;return;}
@@ -447,7 +460,7 @@
     if(action==='module-up'||action==='module-down'){const li=control.closest('li'),neighbor=action==='module-up'?li.previousElementSibling:li.nextElementSibling;if(neighbor){if(action==='module-up')li.parentElement.insertBefore(li,neighbor);else li.parentElement.insertBefore(neighbor,li);state.editorDirty=true;}return;}
     if(action==='reply-comment'){const form=control.closest('details').querySelector('form');form.elements.parent_id.value=id;form.elements.body.focus();return;}
     if(action==='copy-draft'){try{await navigator.clipboard.writeText(JSON.stringify([...new FormData(control.closest('form')).entries()],null,2));notice('Draft copied.');}catch{notice('Select and copy your draft before loading the latest version.',true);}return;}
-    if(action==='reload-editor'){if(window.confirm('Replace this unsaved draft with the latest saved version?')){state.editorDirty=false;const old=state.editor;await refresh();if(old?.item?.id){const maps={task:'tasks',triage:'requests',form:'forms',material:'materials'};const latest=state.data[maps[old.type]]?.find(x=>x.id===old.item.id);if(latest)edit(old.type,latest,old.type==='material'?{version:state.data.material_versions.find(v=>v.id===(latest.draft_version_id||latest.published_version_id))}:{});}else if(old?.type==='settings')edit('settings');}return;}
+    if(action==='reload-editor'){if(window.confirm('Replace this unsaved draft with the latest saved version?')){state.editorDirty=false;const old=state.editor;await refresh();if(old?.item?.id){const maps={task:'tasks',triage:'requests',form:'forms',material:'materials',...Object.assign({},...features.map(f=>f.editorTable||{}))};const latest=state.data[maps[old.type]]?.find(x=>x.id===old.item.id);if(latest)edit(old.type,latest,old.type==='material'?{version:state.data.material_versions.find(v=>v.id===(latest.draft_version_id||latest.published_version_id))}:{});}else if(old?.type==='settings')edit('settings');}return;}
     if(action==='refresh'){if(discard())await refresh();return;}
     if(control._busy)return;control._busy=true;control.setAttribute('aria-busy','true');control.disabled=true;
     const writing=!['open-inbox-item','download','export'].includes(action);
@@ -457,6 +470,7 @@
       if(action==='download'){await api.download(d.workspace_files.find(f=>f.id===id));return;}
       if(action==='export'){if(!state.active){notice('Open a workspace before downloading its shared history.',true);return;}await api.exportWorkspace(state.active.id,control.dataset.format||'markdown');notice('Shared history downloaded. Files can be downloaded separately.');return;}
       let command,payload;
+      for(const feature of features){const next=feature.command?.(action,control);if(next){command=next.action;payload=next.payload;break;}}
       if(action==='complete-task'){const t=d.tasks.find(t=>t.id===id);command='task.complete';payload={id,revision:t.revision,status:t.status==='completed'?'open':'completed'};}
       if(action==='publish-material'){const m=d.materials.find(m=>m.id===id);command='material.publish';payload={id,revision:m.revision,version_id:control.dataset.version};}
       if(action==='archive-material'){if(!window.confirm('Archive this material and remove client access to its versions?'))return;const m=d.materials.find(m=>m.id===id);command='material.archive';payload={id,revision:m.revision};state.view='materials';history.replaceState({},'',location.pathname+location.search+'#materials');}
@@ -469,7 +483,7 @@
         const response=await api.team(action==='revoke-member'?'revoke_member':action==='revoke-invite'?'revoke_invite':'resend_invite',state.active.id,{id},control._operation||=uuid());
         await refresh();notice(action==='resend-invite'?(response.delivery==='sent'?'Invitation sent.':'Delivery '+response.delivery+'. Check the invitation before trying again.'):'Access updated.',action==='resend-invite'&&response.delivery!=='sent');return;
       }
-      if(command){await api.mutate(command,state.active.id,payload,control._operation||=uuid());await refresh();notice('Saved.');}
+      if(command){const result=await api.mutate(command,state.active.id,payload,control._operation||=uuid());for(const feature of features)feature.afterCommand?.(action,result);await refresh();notice('Saved.');}
     }catch(error){notice(error.message,true);}
     finally{if(writing)pendingSaves--;control._busy=false;control.removeAttribute('aria-busy');control.disabled=false;}
   }
@@ -479,10 +493,11 @@
     const requestedWorkspace=new URLSearchParams(location.search).get('workspace');
     root.hidden=false;document.body.classList.add('workspace-mode');shell();readRoute();navigation();
     root.addEventListener('submit',submit);root.addEventListener('click',click);
-    root.addEventListener('input',event=>{const form=event.target.closest('form');if(form){state.editorDirty=true;if(['reply','comment','submission'].includes(form.dataset.form))inlineDrafts.set(draftKey(form),[...new FormData(form).entries()]);}});
+    root.addEventListener('input',event=>{const form=event.target.closest('form');if(form){state.editorDirty=true;if(['reply','comment','submission','calendar-comment','calendar-response','learning-answer','learning-feedback','inspiration-comment'].includes(form.dataset.form))inlineDrafts.set(draftKey(form),[...new FormData(form).entries()]);}});
     root.addEventListener('change',async event=>{
       if(event.target.id==='ws-workspace-select'){if(!discard()){event.target.value=state.active?.id;return;}state.view='home';state.detail=null;state.version=null;const url=new URL(location.href);url.searchParams.set('workspace',event.target.value);url.hash='home';history.replaceState({},'',url);await refresh(event.target.value);}
       if(event.target.matches('[data-version-select]'))location.hash='material/'+state.detail+'/'+event.target.value;
+      for(const feature of features)feature.change?.(event.target);
     });
     root.addEventListener('click',event=>{const a=event.target.closest('a[href^="#"]');if(!a)return;if(!discard()){event.preventDefault();return;}state.editorDirty=false;state.editor=null;root.classList.remove('ws-menu-open');root.querySelector('[data-action="menu"]').setAttribute('aria-expanded','false');});
     root.addEventListener('click',event=>{if(root.classList.contains('ws-menu-open')&&!event.target.closest('#ws-sidebar,[data-action="menu"]')){root.classList.remove('ws-menu-open');root.querySelector('[data-action="menu"]').setAttribute('aria-expanded','false');}});

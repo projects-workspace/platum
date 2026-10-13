@@ -1,0 +1,8 @@
+.ws-progress-summary{max-width:70ch;line-height:1.7;border-bottom:1px solid var(--ws-line);padding:1rem 0;margin:1.5rem 0}
+.ws-report-metric{padding:1rem 0;border-top:1px solid var(--ws-line)}
+.ws-report-metric h3{margin:0 0 .5rem}
+.ws-report-content>h2{margin-top:1.75rem}
+[data-template-items]>fieldset{margin-block:1.5rem}
+[data-template-item]>legend{font-weight:700}
+[data-template-item] .ws-question-editor{padding:1rem;background:var(--ws-paper)}
+.ws-form details>summary{cursor:pointer;font-weight:600;margin-bottom:1rem}

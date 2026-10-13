@@ -1,0 +1,10 @@
+.ws-practice-attempt{padding:1.5rem 0;border-top:1px solid var(--ws-line)}
+.ws-practice-feedback{border-top:1px solid var(--ws-line);padding:1rem 0;margin:1rem 0}
+.ws-practice-feedback h3{margin-top:0}
+.ws-related{padding:1rem 0;max-width:70ch}
+.ws-related h3{font-size:.9rem;color:var(--ws-muted);margin:0 0 .5rem}
+.ws-related p{margin:.35rem 0}
+.ws-inspiration-filters{margin-bottom:1.5rem}
+.ws-inspiration-filters [aria-pressed=true]{background:var(--ws-tint);border-color:var(--ws-accent)}
+.ws-reading>.ws-form{margin-top:1.5rem;padding:0;max-width:100%}
+.ws-learning-content>h2:not(:first-child){margin-top:1.75rem}

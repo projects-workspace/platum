@@ -64,6 +64,13 @@ const requiredFiles = [
   'workspace-app.js',
   'workspace-app.css',
   'workspace-data.js',
+  'workspace-calendar.js',
+  'workspace-calendar-domain.js',
+  'workspace-calendar.css',
+  'workspace-learning.js',
+  'workspace-learning.css',
+  'workspace-progress.js',
+  'workspace-progress.css',
   'api/team.js',
   'api/files.js',
   'supabase/migrations/20261012163018_collaboration_workspace.sql',
@@ -138,7 +145,9 @@ for (const file of walk('')) {
   if (!/\.(html|js|json|md|toml|yaml|yml|css)$/.test(file)) continue;
   const content = fs.readFileSync(path.join(ROOT, file), 'utf8');
   for (const route of removedRoutes) {
-    if (content.includes(route)) {
+    // Match the removed filename, not a suffix of a new workspace module.
+    const exactRoute = new RegExp('(^|[^a-zA-Z0-9_-])' + route.replace(/\./g, '\\.') + '(?=$|[^a-zA-Z0-9_.-])');
+    if (exactRoute.test(content)) {
       routeReferences.push(`${file} -> ${route}`);
     }
   }

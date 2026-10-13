@@ -3,7 +3,7 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
 const {chromium}=require('playwright');
-const {cfg,guard,rows,success,randomUUID,team,rpc}=require('./local-support.cjs');
+const {cfg,guard,rows,success,randomUUID,team,rpc,createSuiteUsers}=require('./local-support.cjs');
 const out=process.env.PLATUM_BROWSER_OUTPUT;
 if(!out)throw new Error('Set PLATUM_BROWSER_OUTPUT to a private output directory outside the repository.');
 fs.mkdirSync(out,{recursive:true});
@@ -34,6 +34,7 @@ async function publish(page){
 async function noOverflow(page){assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,'The page must not overflow horizontally');}
 (async()=>{
   await guard();assert.ok(cfg.fixture?.workspaceB,'Run the integration suite before the browser journey.');
+  cfg.users=await createSuiteUsers('CollaborationBrowser');
   // Each browser pass gets fresh content without deleting earlier evidence.
   cfg.fixture.workspaceB=success(await team(cfg.users.Owner,'create_workspace',null,{name:'Fieldwork collaboration'}),'Create browser fixture workspace').workspace.id;
   success(await team(cfg.users.Owner,'invite',cfg.fixture.workspaceB,{email:cfg.users.ClientB.email,role:'client'}),'Invite browser fixture client');
