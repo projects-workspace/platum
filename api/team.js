@@ -46,7 +46,8 @@ function createHandler(env = process.env, fetcher = globalThis.fetch) {
         try {
           response = await fetcher(base + path, {
             method: body === undefined ? 'GET' : 'POST',
-            headers: { apikey: secret, Authorization: user ? authorization : 'Bearer ' + secret, ...(body === undefined ? {} : { 'Content-Type': 'application/json' }) },
+            // Opaque secret keys authenticate through apikey; only JWTs belong in Bearer.
+            headers: { apikey: secret, ...(user ? { Authorization: authorization } : secret.startsWith('sb_secret_') ? {} : { Authorization: 'Bearer ' + secret }), ...(body === undefined ? {} : { 'Content-Type': 'application/json' }) },
             body: body === undefined ? undefined : JSON.stringify(body),
             signal: AbortSignal.timeout(15000),
           });

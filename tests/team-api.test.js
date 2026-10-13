@@ -7,7 +7,7 @@ const workspace = '11111111-1111-4111-8111-111111111111';
 const invitation = { id: '22222222-2222-4222-8222-222222222222', workspace_id: workspace, email: 'client@platum.test', role: 'client', mail_status: 'pending' };
 const operation = '33333333-3333-4333-8333-333333333333';
 const env = { PLATUM_SUPABASE_URL: 'https://platum.test', PLATUM_SUPABASE_SERVICE_ROLE_KEY: 'test-server-key', PLATUM_APP_URL: 'https://portal.test' };
-function setup({ role = 'owner', bootstrap = false, mail = 'new', rpcError, memberships, confirmed = true } = {}) {
+function setup({ role = 'owner', bootstrap = false, mail = 'new', rpcError, memberships, confirmed = true, key = env.PLATUM_SUPABASE_SERVICE_ROLE_KEY } = {}) {
   const calls = [];
   const fetcher = async (url, options) => {
     const body = options.body ? JSON.parse(options.body) : null;
@@ -27,7 +27,7 @@ function setup({ role = 'owner', bootstrap = false, mail = 'new', rpcError, memb
     }
     return new Response(JSON.stringify(data), { status, headers: { 'content-type': 'application/json' } });
   };
-  const handler = createHandler({ ...env, ...(bootstrap ? { PLATUM_BOOTSTRAP_USER_IDS: actor } : {}) }, fetcher);
+  const handler = createHandler({ ...env, PLATUM_SUPABASE_SERVICE_ROLE_KEY: key, ...(bootstrap ? { PLATUM_BOOTSTRAP_USER_IDS: actor } : {}) }, fetcher);
   return { calls, async request(body, changes = {}) {
     let result;
     const req = { method: 'POST', headers: { authorization: 'Bearer user-token', origin: 'https://portal.test', 'content-type': 'application/json' }, body, ...changes };
@@ -90,4 +90,19 @@ test('unconfirmed accounts and oversized or malformed actions are rejected', asy
   assert.equal((await setup({confirmed:false}).request(input('create_workspace',{name:'Client'}))).status,401);
   assert.equal((await setup().request(input('create_workspace',{name:'x'.repeat(17000)}))).status,400);
   assert.equal((await setup().request({...input('invite'),operation_id:'bad'})).status,400);
+});
+
+test('opaque server keys use apikey while identity and membership retain the user JWT', async () => {
+  const key = 'sb_secret_synthetic_rotation_fixture';
+  const s = setup({ key });
+  assert.equal((await s.request(input('create_workspace', { name: 'Rotation fixture' }))).status, 201);
+  assert.equal((await s.request(input('invite', { email: invitation.email, role: 'client' }))).body.delivery, 'sent');
+  for (const { url, options } of s.calls) {
+    assert.equal(options.headers.apikey, key);
+    const userScoped = url.endsWith('/auth/v1/user') || url.includes('/workspace_members?');
+    assert.equal(options.headers.Authorization, userScoped ? 'Bearer user-token' : undefined);
+  }
+  const denied = setup({ key, role: 'client' });
+  assert.equal((await denied.request(input('create_workspace', { name: 'Denied' }))).status, 403);
+  assert.equal(denied.calls.some(c => c.url.includes('/rpc/')), false);
 });

@@ -41,7 +41,7 @@ function createHandler(env = process.env, fetcher = globalThis.fetch) {
       if (!UUID.test(file.workspace_id) || !file.path?.startsWith(file.workspace_id + '/' + id + '/') || file.path.split('/').includes('..') ||
           !Number.isSafeInteger(Number(file.size_bytes)) || Number(file.size_bytes) < 1 || Number(file.size_bytes) > 10485760) throw failure(502, 'This file is unavailable.');
       const storage = await fetcher(base + '/storage/v1/object/authenticated/platum-workspace-files/' + file.path.split('/').map(encodeURIComponent).join('/'), {
-        cache: 'no-store', headers: { apikey: key, Authorization: 'Bearer ' + key }, signal: AbortSignal.timeout(60000),
+        cache: 'no-store', headers: { apikey: key, ...(key.startsWith('sb_secret_') ? {} : { Authorization: 'Bearer ' + key }) }, signal: AbortSignal.timeout(60000),
       });
       if (!storage.ok || !storage.body) throw failure(502, 'The file could not be downloaded. Try again.');
       const filename = String(file.name || 'download').replace(/[\r\n]/g, '');

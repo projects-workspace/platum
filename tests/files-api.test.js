@@ -16,7 +16,7 @@ class ResponseSink extends Writable {
   _write(chunk, encoding, next) { this.chunks.push(Buffer.from(chunk)); next(); }
   body() { return Buffer.concat(this.chunks).toString(); }
 }
-function fixture({ confirmed = true, visible = true, row = file, storageFailure = false, size = 6 } = {}) {
+function fixture({ confirmed = true, visible = true, row = file, storageFailure = false, size = 6, key = env.PLATUM_SUPABASE_SERVICE_ROLE_KEY } = {}) {
   const calls = [];
   let readable = visible;
   const fetcher = async (url, options) => {
@@ -26,7 +26,7 @@ function fixture({ confirmed = true, visible = true, row = file, storageFailure 
     assert.ok(url.includes('/storage/v1/object/authenticated/platum-workspace-files/'));
     return storageFailure ? new Response('private upstream diagnostic', { status: 503 }) : new Response(Buffer.alloc(size, 65));
   };
-  const handler = createHandler(env, fetcher);
+  const handler = createHandler({ ...env, PLATUM_SUPABASE_SERVICE_ROLE_KEY: key }, fetcher);
   return { calls, revoke() { readable = false; }, async request(changes = {}) {
     const req = { method: 'GET', url: '/api/files?id=' + id, headers: { authorization: 'Bearer user-token', origin: env.PLATUM_APP_URL }, ...changes };
     const res = new ResponseSink(); await handler(req, res); return res;
@@ -86,4 +86,17 @@ test('file names cannot inject response headers and provider errors remain priva
   const failed = await fixture({ storageFailure: true }).request();
   assert.equal(failed.statusCode, 502);
   assert.equal(failed.body().includes('private upstream diagnostic'), false);
+});
+
+test('opaque keys reach Storage only after current user authorization', async () => {
+  const key = 'sb_secret_synthetic_rotation_fixture';
+  const f = fixture({ key });
+  assert.equal((await f.request()).body(), 'AAAAAA');
+  assert.equal(f.calls[0].options.headers.Authorization, 'Bearer user-token');
+  assert.equal(f.calls[1].options.headers.Authorization, 'Bearer user-token');
+  assert.equal(f.calls[2].options.headers.Authorization, undefined);
+  assert.ok(f.calls.every(c => c.options.headers.apikey === key));
+  f.revoke();
+  assert.equal((await f.request()).statusCode, 404);
+  assert.equal(f.calls.filter(c => c.url.includes('/storage/')).length, 1);
 });

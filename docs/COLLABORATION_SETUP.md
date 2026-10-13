@@ -9,13 +9,15 @@ The static app uses client-space.config.js for its browser-safe Supabase URL and
 | Variable | Purpose |
 |---|---|
 | PLATUM_SUPABASE_URL | The same verified Platum backend used by the browser |
-| PLATUM_SUPABASE_SERVICE_ROLE_KEY | Server-only Auth administration and scoped workspace-management commands |
+| PLATUM_SUPABASE_SERVICE_ROLE_KEY | Server-only Supabase secret key for Auth administration, scoped workspace-management commands and authorized file delivery; the variable name is retained for compatibility |
 | PLATUM_APP_URL | Exact application origin and fixed invitation callback destination |
 | PLATUM_BOOTSTRAP_USER_IDS | Explicit confirmed Auth user UUIDs permitted to create the first workspace |
 
 Existing workspace owners and administrators may create additional workspaces. A bootstrap identity does not gain access to other workspaces. After establishing the first owner, remove the bootstrap allowance if it is no longer needed. Do not put these identifiers or the server key into browser code.
 
 The management API authenticates the bearer token with Auth, checks workspace membership, and uses service-only transactional commands. Team members can work on assigned client records but cannot invite people or manage memberships. Only owners can grant or revoke administrator access; the last owner cannot be removed.
+
+For a server-key rotation, create a dedicated Supabase secret key, replace the production variable above through the secret store, and redeploy the server. Opaque secret keys travel only in the `apikey` header; user-scoped Auth and metadata requests retain the user's bearer JWT. Legacy JWT keys remain supported during the cutover. Verify an authorized workspace command, private file download, and denied unauthorized requests before deactivating the legacy keys in Supabase. Creating a replacement alone does not revoke a legacy key. Check any separately hosted Telegram worker before project-wide deactivation; its configured runtime is independent of the Vercel deployment.
 
 Email authentication must be enabled while public signup is disabled. In the local CLI configuration, auth.email.enable_signup enables the email provider; auth.enable_signup=false remains the global signup prohibition. The integration suite checks both settings by making actual Auth requests. The browser requests email links with create_user=false.
 
