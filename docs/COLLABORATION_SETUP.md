@@ -19,6 +19,8 @@ The management API authenticates the bearer token with Auth, checks workspace me
 
 For a server-key rotation, create a dedicated Supabase secret key, replace the production variable above through the secret store, and redeploy the server. Opaque secret keys travel only in the `apikey` header; user-scoped Auth and metadata requests retain the user's bearer JWT. Legacy JWT keys remain supported during the cutover. Verify an authorized workspace command, private file download, and denied unauthorized requests before deactivating the legacy keys in Supabase. Creating a replacement alone does not revoke a legacy key. Check any separately hosted Telegram worker before project-wide deactivation; its configured runtime is independent of the Vercel deployment.
 
+After retirement, old deployments retain their old environment snapshots and may fail. A rollback must use compatible server code deployed with the current Secret. Do not re-enable a flagged legacy key as a rollback shortcut.
+
 Email authentication must be enabled while public signup is disabled. In the local CLI configuration, auth.email.enable_signup enables the email provider; auth.enable_signup=false remains the global signup prohibition. The integration suite checks both settings by making actual Auth requests. The browser requests email links with create_user=false.
 
 ## Database and release order
