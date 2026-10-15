@@ -57,12 +57,11 @@
     }
   }
 
-  function translate(message) {
-    return message;
-  }
+  const i18n = window.PLATUM_I18N;
+  function translate(message) { return i18n.t(message); }
 
   function setStatus(message, isError = false) {
-    dom.status.textContent = translate(message);
+    i18n.setText(dom.status, message);
     dom.status.classList.toggle('is-error', isError);
   }
 
@@ -274,6 +273,7 @@
     dom.gate.setAttribute('aria-hidden', 'true');
     dom.accountName.textContent = name;
     dom.accountProvider.textContent = providerName(user);
+    i18n.subscribe(() => { dom.accountProvider.textContent = providerName(user); });
     dom.accountButton.textContent = name.trim().charAt(0).toUpperCase() || 'C';
     dom.accountButton.title = name;
     publishAuthContext(user, null, isAdmin, session);

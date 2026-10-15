@@ -823,3 +823,33 @@ input[type="text"]:focus {
     flex-direction: column;
   }
 }
+
+.locale-mount {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 4px max(12px, env(safe-area-inset-right));
+}
+.locale-switcher {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border: 1px solid rgba(23, 63, 44, .18);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, .94);
+  color: #173f2c;
+  font-size: 12px;
+  font-weight: 600;
+  box-shadow: 0 4px 16px rgba(23, 63, 44, .08);
+}
+.locale-switcher select {
+  min-width: 112px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.locale-switcher:focus-within { outline: 2px solid #173f2c; outline-offset: 2px; }

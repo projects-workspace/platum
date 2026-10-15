@@ -283,11 +283,11 @@ check(
   !/ADMIN_USERNAMES|PROHOR_TELEGRAM_USERNAME/.test(`${botSource}\n${renderSource}`)
 );
 check(
-  'MVP interface and questionnaire are English-only',
+  'interface and questionnaire use explicit English/Ukrainian locale controls',
   /<html\s+lang="en"/i.test(clientHtml)
     && /<html\s+lang="en"/i.test(intakeHtml)
-    && !/data-(?:auth-)?language|>RU<|>EN</.test(clientHtml)
-    && !/[А-Яа-яЁё]/.test(`${clientHtml}\n${publicClientSource}\n${clientAuthSource}\n${browserIntakeSource}\n${intakeHtml}`)
+    && [clientHtml, intakeHtml].every(html => /data-language-selector/.test(html) && /value="en"/.test(html) && /value="uk"/.test(html) && /client-space\.i18n\.js/.test(html))
+    && !/createTreeWalker/.test(publicClientSource)
 );
 check(
   'browser configuration targets only the verified Platum Supabase project',
@@ -328,7 +328,7 @@ check(
     && /return\s+testWorkspaceActive\s*\?\s*null\s*:\s*user;/.test(clientAuthSource)
     && /if\s*\(testWorkspaceActive\)\s*\{\s*clearSession\(\);\s*return;\s*\}/.test(clientAuthSource)
     && /isAdminMode\s*&&\s*!authContext\.isTestWorkspace/.test(publicClientSource)
-    && /dom\.sidebarAccessRole\.textContent\s*=\s*'Test access'/.test(publicClientSource)
+    && /i18n\.setText\(dom\.sidebarAccessRole,\s*'Test access'\)/.test(publicClientSource)
 );
 check(
   'workspace view switching stays deterministic across browsers',

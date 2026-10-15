@@ -3,6 +3,8 @@
 
   const STORAGE_KEY = 'platum:artist-strategy-intake:v1';
   const SAVE_DELAY = 450;
+  const i18n = window.PLATUM_I18N;
+  const ui = source => i18n.mark(source);
 
   const sections = [
     {
@@ -135,16 +137,14 @@
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 
       if (dom.saveIndicator) {
-        dom.saveIndicator.textContent = message
-          ? `${message} ${formatTime(state.updatedAt)}`
-          : `Saved locally ${formatTime(state.updatedAt)}`;
+        i18n.setText(dom.saveIndicator, message ? '{message} {time}' : 'Saved locally {time}', {message:i18n.t(message || ''),time:formatTime(state.updatedAt)});
         dom.saveIndicator.classList.remove('is-error');
       }
 
       return true;
     } catch (error) {
       if (dom.saveIndicator) {
-        dom.saveIndicator.textContent = 'The draft could not be saved in this browser';
+        i18n.setText(dom.saveIndicator, 'The draft could not be saved in this browser');
         dom.saveIndicator.classList.add('is-error');
       }
 
@@ -154,7 +154,7 @@
 
   function formatTime(value) {
     if (!value) return '';
-    return new Intl.DateTimeFormat('ru-RU', {
+    return new Intl.DateTimeFormat(i18n.language() === 'uk' ? 'uk-UA' : 'en', {
       hour: '2-digit',
       minute: '2-digit',
     }).format(new Date(value));
@@ -164,11 +164,10 @@
     renderNav();
     renderSections();
     updateProgress();
+    i18n.apply(dom.form);
 
     if (dom.saveIndicator && !dom.saveIndicator.textContent) {
-      dom.saveIndicator.textContent = state.updatedAt
-        ? `Saved locally ${formatTime(state.updatedAt)}`
-        : 'The draft has not been saved yet';
+      i18n.setText(dom.saveIndicator, state.updatedAt ? 'Saved locally {time}' : 'The draft has not been saved yet', {time:formatTime(state.updatedAt)});
     }
   }
 
@@ -185,7 +184,7 @@
         <li>
           <button class="${classes}" type="button" data-nav-section="${section.id}">
             <span class="nav-index">${complete ? '✓' : section.code}</span>
-            <span class="nav-title">${escapeHtml(section.title)}</span>
+            <span class="nav-title">${ui(section.title)}</span>
           </button>
         </li>
       `;
@@ -209,13 +208,13 @@
         <article class="${classes}" data-section-card="${section.id}">
           <div class="section-head is-clickable" data-open-section="${section.id}" role="button" tabindex="0">
             <div>
-              <p class="section-kicker">Section ${section.code} / ${section.priority}</p>
-              <h2 class="section-title">${escapeHtml(section.title)}</h2>
-              <p class="section-note">${escapeHtml(section.note)}</p>
+              <p class="section-kicker">${i18n.mark('Section {code} / {priority}', 'span', {code:section.code, priority:i18n.t(section.priority)})}</p>
+              <h2 class="section-title">${ui(section.title)}</h2>
+              <p class="section-note">${ui(section.note)}</p>
             </div>
             <div class="section-head-actions">
-              <span class="section-state">${getSectionStateLabel(section)}</span>
-              ${showEditButton ? `<button class="section-edit-btn" type="button" data-nav-section="${section.id}">Edit</button>` : ''}
+              <span class="section-state">${ui(getSectionStateLabel(section))}</span>
+              ${showEditButton ? `<button class="section-edit-btn" type="button" data-nav-section="${section.id}">${ui('Edit')}</button>` : ''}
             </div>
           </div>
           <div class="section-body">
@@ -223,11 +222,11 @@
               ${section.fields.map(renderField).join('')}
             </div>
             <div class="actions">
-              <button class="action-btn primary" type="button" data-save-section="${section.id}">Save section locally</button>
+              <button class="action-btn primary" type="button" data-save-section="${section.id}">${ui('Save section locally')}</button>
             </div>
             <div class="completion-panel ${isEverythingComplete() && index === sections.length - 1 ? 'is-visible' : ''}">
-              <strong>The local draft is complete.</strong>
-              Answers are stored only in this browser and were not automatically sent to the team.
+              <strong><span data-i18n-key="The local draft is complete.">The local draft is complete.</span></strong>
+              ${ui('Answers are stored only in this browser and were not automatically sent to the team.')}
             </div>
           </div>
         </article>
@@ -237,14 +236,14 @@
 
   function renderField(field) {
     const answer = state.answers[field.id];
-    const hint = field.hint ? `<p class="field-hint">${escapeHtml(field.hint)}</p>` : '';
+    const hint = field.hint ? `<p class="field-hint">${ui(field.hint)}</p>` : '';
 
     if (field.type === 'textarea') {
       return `
         <label class="field" for="${field.id}">
-          <span class="field-label">${escapeHtml(field.label)}</span>
+          <span class="field-label">${ui(field.label)}</span>
           ${hint}
-          <textarea id="${field.id}" name="${field.id}" placeholder="${escapeHtml(field.placeholder || '')}">${escapeHtml(answer || '')}</textarea>
+          <textarea id="${field.id}" name="${field.id}" data-i18n-placeholder="${escapeHtml(field.placeholder || '')}" placeholder="${escapeHtml(i18n.t(field.placeholder || ''))}">${escapeHtml(answer || '')}</textarea>
         </label>
       `;
     }
@@ -252,13 +251,13 @@
     if (field.type === 'radio') {
       return `
         <fieldset class="field">
-          <legend class="field-label">${escapeHtml(field.label)}</legend>
+          <legend class="field-label">${ui(field.label)}</legend>
           ${hint}
           <div class="choice-grid">
             ${field.options.map((option) => `
               <label class="choice">
                 <input type="checkbox" name="${field.id}" data-single-choice="${field.id}" value="${escapeHtml(option)}" ${answer === option ? 'checked' : ''}>
-                <span>${escapeHtml(option)}</span>
+                <span>${ui(option)}</span>
               </label>
             `).join('')}
           </div>
@@ -271,13 +270,13 @@
 
       return `
         <fieldset class="field">
-          <legend class="field-label">${escapeHtml(field.label)}</legend>
+          <legend class="field-label">${ui(field.label)}</legend>
           ${hint}
           <div class="choice-grid">
             ${field.options.map((option) => `
               <label class="choice">
                 <input type="checkbox" name="${field.id}" value="${escapeHtml(option)}" ${values.includes(option) ? 'checked' : ''}>
-                <span>${escapeHtml(option)}</span>
+                <span>${ui(option)}</span>
               </label>
             `).join('')}
           </div>
@@ -362,7 +361,7 @@
     const buttons = Array.from(document.querySelectorAll(`[data-save-section="${sectionId}"]`));
     buttons.forEach((button) => {
       button.disabled = true;
-      button.textContent = 'Saving…';
+      i18n.setText(button, 'Saving…');
     });
 
     collectAnswers();
@@ -371,7 +370,7 @@
 
     state.currentSection = sectionId;
 
-    const saved = saveLocal(`Section ${section.code} saved locally`);
+    const saved = saveLocal('Draft saved');
     render();
 
     if (!saved) {
@@ -382,7 +381,7 @@
     if (isEverythingComplete()) {
       showToast('The local draft is complete and saved on this device.');
     } else {
-      showToast(`Section ${section.code} is saved only on this device.`);
+      showToast('Section saved only on this device.');
     }
   }
 
@@ -401,7 +400,7 @@
   }
 
   function showToast(message) {
-    dom.toast.textContent = message;
+    i18n.setText(dom.toast, message);
     dom.toast.classList.add('is-visible');
     clearTimeout(toastTimer);
     toastTimer = window.setTimeout(() => {
@@ -428,7 +427,7 @@
     const card = document.querySelector(`[data-section-card="${sectionId}"]`);
     const badge = card ? card.querySelector('.section-state') : null;
     if (card) card.classList.add('is-edited');
-    if (badge) badge.textContent = 'edited';
+    if (badge) i18n.setText(badge, 'edited');
   }
 
   dom.form.addEventListener('input', (event) => {
@@ -508,5 +507,9 @@
     saveLocal();
   });
 
+  i18n.subscribe(() => {
+    i18n.apply(dom.form);
+    if (dom.saveIndicator && !dom.saveIndicator.classList.contains('is-error')) i18n.setText(dom.saveIndicator, state.updatedAt ? 'Saved locally {time}' : 'The draft has not been saved yet', {time:formatTime(state.updatedAt)});
+  });
   render();
 }());

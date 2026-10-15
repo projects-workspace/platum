@@ -24,44 +24,53 @@
   <link rel="stylesheet" href="workspace-progress.css">
 </head>
 <body class="auth-loading">
+  <div class="locale-mount"><label class="locale-switcher">
+    <span data-i18n-key="Language">Language</span>
+    <select data-language-selector aria-label="Language" data-i18n-aria-label="Language">
+      <option value="en">English</option>
+      <option value="uk">Українська</option>
+    </select>
+  </label></div>
+
   <div class="ambient ambient--one" aria-hidden="true"></div>
   <div class="ambient ambient--two" aria-hidden="true"></div>
 
   <section class="auth-gate" id="auth-gate" aria-labelledby="auth-title">
     <div class="auth-card">
+  <div class="locale-mount"><label class="locale-switcher">
+    <span data-i18n-key="Language">Language</span>
+    <select data-language-selector aria-label="Language" data-i18n-aria-label="Language">
+      <option value="en">English</option>
+      <option value="uk">Українська</option>
+    </select>
+  </label></div>
       <div class="auth-card__top">
-      <a class="auth-brand" href="index.html" aria-label="Platum home">
-        <span class="brand-mark" data-cabinet-brand-mark>P</span>
-        <span><strong data-cabinet-brand-name>Platum</strong><small>Private Workspace</small></span>
+      <a class="auth-brand" href="index.html" aria-label="Platum home" data-i18n-aria-label="Platum home">
+        <span class="brand-mark" data-cabinet-brand-mark><span data-i18n-key="P">P</span></span>
+        <span><strong data-cabinet-brand-name><span data-i18n-key="Platum">Platum</span></strong><small><span data-i18n-key="Private Workspace">Private Workspace</span></small></span>
       </a>
       </div>
       <div class="auth-card__copy">
-        <span class="section-kicker">Private client cabinet</span>
-        <h1 id="auth-title">Welcome back.</h1>
-        <p>Sign in to open the workspace connected to your account.</p>
+        <span class="section-kicker"><span data-i18n-key="Private client cabinet">Private client cabinet</span></span>
+        <h1 id="auth-title"><span data-i18n-key="Welcome back.">Welcome back.</span></h1>
+        <p><span data-i18n-key="Sign in to open the workspace connected to your account.">Sign in to open the workspace connected to your account.</span></p>
       </div>
       <div class="auth-options">
         <a class="auth-button auth-button--telegram" id="telegram-login" href="#" target="_blank" rel="noreferrer" hidden>
-          <span class="auth-provider-icon" aria-hidden="true">↗</span>
-          Continue with Telegram
-        </a>
+          <span class="auth-provider-icon" aria-hidden="true">↗</span><span data-i18n-key="Continue with Telegram">Continue with Telegram</span></a>
         <button class="auth-button auth-button--google" id="google-login" type="button" hidden>
-          <span class="google-mark" aria-hidden="true">G</span>
-          Continue with Google
-        </button>
+          <span class="google-mark" aria-hidden="true"><span data-i18n-key="G">G</span></span><span data-i18n-key="Continue with Google">Continue with Google</span></button>
         <form class="auth-email" id="email-login-form" hidden>
-          <label for="email-login">Or continue by email</label>
+          <label for="email-login"><span data-i18n-key="Or continue by email">Or continue by email</span></label>
           <div class="auth-email__row">
-            <input id="email-login" name="email" type="email" autocomplete="email" placeholder="you@example.com" required>
-            <button type="submit">Send secure link</button>
+            <input id="email-login" name="email" type="email" autocomplete="email" placeholder="you@example.com" data-i18n-placeholder="you@example.com" required>
+            <button type="submit"><span data-i18n-key="Send secure link">Send secure link</span></button>
           </div>
         </form>
-        <button class="auth-button auth-button--preview" id="preview-login" type="button" hidden>
-          Enter test workspace
-        </button>
+        <button class="auth-button auth-button--preview" id="preview-login" type="button" hidden><span data-i18n-key="Enter test workspace">Enter test workspace</span></button>
       </div>
-      <p class="auth-status" id="auth-status" role="status" aria-live="polite">Checking your session…</p>
-      <p class="auth-note">First visit? Open the invitation sent by your Platum administrator. After accepting it, use the same email here for future sign-ins. Test access uses isolated demo data and never opens a real client workspace. <a id="support-link" href="#" target="_blank" rel="noreferrer" hidden>Contact the team</a></p>
+      <p class="auth-status" id="auth-status" role="status" aria-live="polite"><span data-i18n-key="Checking your session…">Checking your session…</span></p>
+      <p class="auth-note"><span data-i18n-key="First visit? Open the invitation sent by your Platum administrator. After accepting it, use the same email here for future sign-ins. Test access uses isolated demo data and never opens a real client workspace.">First visit? Open the invitation sent by your Platum administrator. After accepting it, use the same email here for future sign-ins. Test access uses isolated demo data and never opens a real client workspace.</span><a id="support-link" href="#" target="_blank" rel="noreferrer" hidden><span data-i18n-key="Contact the team">Contact the team</span></a></p>
     </div>
   </section>
 
@@ -69,96 +78,96 @@
   <div class="portal-shell">
     <aside class="sidebar" id="sidebar">
       <div class="brand-lockup">
-        <a class="brand-mark" href="client-space.html" aria-label="Platum home" data-cabinet-brand-mark>P</a>
+        <a class="brand-mark" href="client-space.html" aria-label="Platum home" data-i18n-aria-label="Platum home" data-cabinet-brand-mark><span data-i18n-key="P">P</span></a>
         <div>
-          <strong data-cabinet-brand-name>Platum</strong>
-          <span>Private Workspace</span>
+          <strong data-cabinet-brand-name><span data-i18n-key="Platum">Platum</span></strong>
+          <span><span data-i18n-key="Private Workspace">Private Workspace</span></span>
         </div>
       </div>
 
-      <div class="client-switcher" aria-label="Current client">
-        <div class="client-avatar" data-client-initials>PM</div>
+      <div class="client-switcher" aria-label="Current client" data-i18n-aria-label="Current client">
+        <div class="client-avatar" data-client-initials><span data-i18n-key="PM">PM</span></div>
         <div class="client-switcher__copy">
-          <span>Current workspace</span>
-          <strong data-client-name>Client Workspace</strong>
+          <span><span data-i18n-key="Current workspace">Current workspace</span></span>
+          <strong data-client-name><span data-i18n-key="Client Workspace">Client Workspace</span></strong>
         </div>
-        <span class="private-dot" title="Private workspace"></span>
+        <span class="private-dot" title="Private workspace" data-i18n-title="Private workspace"></span>
       </div>
 
-      <nav class="portal-nav" aria-label="Client workspace">
+      <nav class="portal-nav" aria-label="Client workspace" data-i18n-aria-label="Client workspace">
         <button class="nav-item nav-item--admin" id="admin-nav" type="button" data-view-target="admin" hidden>
-          <span class="nav-symbol">A</span>
-          <span>Admin home</span>
+          <span class="nav-symbol"><span data-i18n-key="A">A</span></span>
+          <span><span data-i18n-key="Admin home">Admin home</span></span>
         </button>
         <button class="nav-item is-active" type="button" data-view-target="overview" aria-current="page">
           <span class="nav-symbol">01</span>
-          <span>Overview</span>
+          <span><span data-i18n-key="Overview">Overview</span></span>
         </button>
         <button class="nav-item" type="button" data-view-target="strategy">
           <span class="nav-symbol">02</span>
-          <span>Strategy</span>
+          <span><span data-i18n-key="Strategy">Strategy</span></span>
         </button>
         <button class="nav-item" type="button" data-view-target="progress">
           <span class="nav-symbol">03</span>
-          <span>Progress</span>
+          <span><span data-i18n-key="Progress">Progress</span></span>
         </button>
         <button class="nav-item" type="button" data-view-target="tasks">
           <span class="nav-symbol">04</span>
-          <span>My tasks</span>
+          <span><span data-i18n-key="My tasks">My tasks</span></span>
           <span class="nav-count" id="sidebar-task-count">0</span>
         </button>
         <button class="nav-item" type="button" data-view-target="materials">
           <span class="nav-symbol">05</span>
-          <span>Materials</span>
+          <span><span data-i18n-key="Materials">Materials</span></span>
         </button>
         <button class="nav-item" type="button" data-view-target="knowledge">
           <span class="nav-symbol">06</span>
-          <span>Knowledge</span>
+          <span><span data-i18n-key="Knowledge">Knowledge</span></span>
         </button>
         <button class="nav-item" type="button" data-view-target="questions">
           <span class="nav-symbol">07</span>
-          <span>Questions</span>
+          <span><span data-i18n-key="Questions">Questions</span></span>
         </button>
         <button class="nav-item" type="button" data-view-target="forms">
           <span class="nav-symbol">08</span>
-          <span>Forms</span>
+          <span><span data-i18n-key="Forms">Forms</span></span>
         </button>
       </nav>
 
       <div class="sidebar-support">
-        <span>Need help?</span>
-        <p>Your project team is one message away.</p>
-        <button type="button" class="text-button" data-view-link="questions">Ask the team <span>→</span></button>
+        <span><span data-i18n-key="Need help?">Need help?</span></span>
+        <p><span data-i18n-key="Your project team is one message away.">Your project team is one message away.</span></p>
+        <button type="button" class="text-button" data-view-link="questions"><span data-i18n-key="Ask the team">Ask the team</span><span>→</span></button>
       </div>
 
       <div class="sidebar-user">
-        <div class="user-avatar">C</div>
+        <div class="user-avatar"><span data-i18n-key="C">C</span></div>
         <div>
-          <strong data-client-contact>Client</strong>
-          <span id="sidebar-access-role">Client access</span>
+          <strong data-client-contact><span data-i18n-key="Client">Client</span></strong>
+          <span id="sidebar-access-role"><span data-i18n-key="Client access">Client access</span></span>
         </div>
-        <span class="access-badge">Link</span>
+        <span class="access-badge"><span data-i18n-key="Link">Link</span></span>
       </div>
     </aside>
 
     <main class="portal-main">
       <header class="topbar">
-        <button class="mobile-menu" id="mobile-menu" type="button" aria-label="Open navigation" aria-expanded="false">
+        <button class="mobile-menu" id="mobile-menu" type="button" aria-label="Open navigation" data-i18n-aria-label="Open navigation" aria-expanded="false">
           <span></span>
           <span></span>
         </button>
         <div class="topbar__context">
-          <span class="eyebrow">Client workspace</span>
-          <strong id="current-view-label">Overview</strong>
+          <span class="eyebrow"><span data-i18n-key="Client workspace">Client workspace</span></span>
+          <strong id="current-view-label"><span data-i18n-key="Overview">Overview</span></strong>
         </div>
         <div class="topbar__actions">
-          <button class="admin-home-button" id="admin-home-button" type="button" hidden>Admin home</button>
-          <span class="sync-note" id="sync-note" data-no-translate><i></i> Checking sync…</span>
-          <button class="avatar-button" id="account-button" type="button" title="Account" aria-haspopup="true" aria-expanded="false">C</button>
+          <button class="admin-home-button" id="admin-home-button" type="button" hidden><span data-i18n-key="Admin home">Admin home</span></button>
+          <span class="sync-note" id="sync-note" data-no-translate><i></i><span data-i18n-key="Checking sync…">Checking sync…</span></span>
+          <button class="avatar-button" id="account-button" type="button" title="Account" data-i18n-title="Account" aria-haspopup="true" aria-expanded="false"><span data-i18n-key="C">C</span></button>
           <div class="account-menu" id="account-menu" hidden>
-            <strong id="account-name">Client</strong>
-            <span id="account-provider">Secure access</span>
-            <button id="logout-button" type="button">Sign out</button>
+            <strong id="account-name"><span data-i18n-key="Client">Client</span></strong>
+            <span id="account-provider"><span data-i18n-key="Secure access">Secure access</span></span>
+            <button id="logout-button" type="button"><span data-i18n-key="Sign out">Sign out</span></button>
           </div>
         </div>
       </header>
@@ -167,43 +176,43 @@
         <section class="portal-view" data-view="admin" aria-labelledby="admin-title">
           <div class="agency-os-hero">
             <div>
-              <span class="section-kicker">Internal operating system</span>
-              <h1 id="admin-title">Run every client through one clear system.</h1>
-              <p>Manage workspace tasks, client requests, responses, decisions, deliverables, and the activity that keeps every project understandable.</p>
+              <span class="section-kicker"><span data-i18n-key="Internal operating system">Internal operating system</span></span>
+              <h1 id="admin-title"><span data-i18n-key="Run every client through one clear system.">Run every client through one clear system.</span></h1>
+              <p><span data-i18n-key="Manage workspace tasks, client requests, responses, decisions, deliverables, and the activity that keeps every project understandable.">Manage workspace tasks, client requests, responses, decisions, deliverables, and the activity that keeps every project understandable.</span></p>
             </div>
-            <div class="agency-os-hero__status" aria-label="Operating system status">
-              <span>Workspace operations</span>
-              <strong>Shared operations</strong>
-              <small>Membership-scoped records protected by workspace authorization</small>
+            <div class="agency-os-hero__status" aria-label="Operating system status" data-i18n-aria-label="Operating system status">
+              <span><span data-i18n-key="Workspace operations">Workspace operations</span></span>
+              <strong><span data-i18n-key="Shared operations">Shared operations</span></strong>
+              <small><span data-i18n-key="Membership-scoped records protected by workspace authorization">Membership-scoped records protected by workspace authorization</span></small>
             </div>
           </div>
 
           <div class="agency-os-controls">
-            <nav class="agency-os-tabs" aria-label="Agency operating system sections">
-              <button class="is-active" type="button" data-os-tab="command" aria-pressed="true">Command center</button>
-              <button type="button" data-os-tab="workspaces" aria-pressed="false">Workspaces</button>
-              <button type="button" data-os-tab="pipelines" aria-pressed="false">Pipelines</button>
-              <button type="button" data-os-tab="skills" aria-pressed="false">Skills</button>
-              <button type="button" data-os-tab="tasks" aria-pressed="false">Work queue</button>
-              <button type="button" data-os-tab="requests" aria-pressed="false">Client requests</button>
-              <button type="button" data-os-tab="artifacts" aria-pressed="false">Artifacts</button>
-              <button type="button" data-os-tab="decisions" aria-pressed="false">Decisions</button>
-              <button type="button" data-os-tab="agents" aria-pressed="false">AI queue</button>
+            <nav class="agency-os-tabs" aria-label="Agency operating system sections" data-i18n-aria-label="Agency operating system sections">
+              <button class="is-active" type="button" data-os-tab="command" aria-pressed="true"><span data-i18n-key="Command center">Command center</span></button>
+              <button type="button" data-os-tab="workspaces" aria-pressed="false"><span data-i18n-key="Workspaces">Workspaces</span></button>
+              <button type="button" data-os-tab="pipelines" aria-pressed="false"><span data-i18n-key="Pipelines">Pipelines</span></button>
+              <button type="button" data-os-tab="skills" aria-pressed="false"><span data-i18n-key="Skills">Skills</span></button>
+              <button type="button" data-os-tab="tasks" aria-pressed="false"><span data-i18n-key="Work queue">Work queue</span></button>
+              <button type="button" data-os-tab="requests" aria-pressed="false"><span data-i18n-key="Client requests">Client requests</span></button>
+              <button type="button" data-os-tab="artifacts" aria-pressed="false"><span data-i18n-key="Artifacts">Artifacts</span></button>
+              <button type="button" data-os-tab="decisions" aria-pressed="false"><span data-i18n-key="Decisions">Decisions</span></button>
+              <button type="button" data-os-tab="agents" aria-pressed="false"><span data-i18n-key="AI queue">AI queue</span></button>
             </nav>
             <div class="agency-os-actions">
               <label class="agency-os-workspace-filter" for="agency-os-workspace">
-                <span>Workspace</span>
+                <span><span data-i18n-key="Workspace">Workspace</span></span>
                 <select id="agency-os-workspace" data-os-workspace-filter>
-                  <option value="all">All workspaces</option>
-                  <option value="agency">Internal operations</option>
+                  <option value="all" data-i18n-key="All workspaces">All workspaces</option>
+                  <option value="agency" data-i18n-key="Internal operations">Internal operations</option>
                 </select>
               </label>
-              <button class="primary-button" type="button" data-os-new-task>New task <span>+</span></button>
+              <button class="primary-button" type="button" data-os-new-task><span data-i18n-key="New task">New task</span><span>+</span></button>
             </div>
           </div>
 
           <div class="agency-os-root" id="agency-os-root" aria-live="polite">
-            <div class="agency-os-loading">Preparing the operating system…</div>
+            <div class="agency-os-loading"><span data-i18n-key="Preparing the operating system…">Preparing the operating system…</span></div>
           </div>
 
           <div class="admin-cabinet-grid" id="admin-cabinet-grid" hidden></div>
@@ -213,14 +222,13 @@
         <section class="portal-view is-active" data-view="overview" aria-labelledby="overview-title">
           <div class="welcome-panel">
             <div class="welcome-copy">
-              <span class="section-kicker">Your project, in one place</span>
-              <h1 id="overview-title"><span id="greeting">Good day</span>, <span data-client-contact>Client</span>.</h1>
-              <p>See what is moving, what needs your attention, and what the team has prepared for you.</p>
+              <span class="section-kicker"><span data-i18n-key="Your project, in one place">Your project, in one place</span></span>
+              <h1 id="overview-title"><span id="greeting"><span data-i18n-key="Good day">Good day</span></span>, <span data-client-contact><span data-i18n-key="Client">Client</span></span>.</h1>
+              <p><span data-i18n-key="See what is moving, what needs your attention, and what the team has prepared for you.">See what is moving, what needs your attention, and what the team has prepared for you.</span></p>
               <div class="welcome-actions">
-                <button class="primary-button" type="button" data-view-link="tasks">
-                  Continue your tasks <span>→</span>
+                <button class="primary-button" type="button" data-view-link="tasks"><span data-i18n-key="Continue your tasks">Continue your tasks</span><span>→</span>
                 </button>
-                <button class="secondary-button" type="button" data-view-link="progress">View project plan</button>
+                <button class="secondary-button" type="button" data-view-link="progress"><span data-i18n-key="View project plan">View project plan</span></button>
               </div>
             </div>
             <div class="project-pulse">
@@ -230,33 +238,33 @@
                 <span></span>
               </div>
               <div class="pulse-copy">
-                <span>Project pulse</span>
+                <span><span data-i18n-key="Project pulse">Project pulse</span></span>
                 <strong id="project-progress-value">0%</strong>
-                <small>Strategy in progress</small>
+                <small><span data-i18n-key="Strategy in progress">Strategy in progress</span></small>
               </div>
             </div>
           </div>
 
-          <div class="metrics-grid" aria-label="Project summary">
+          <div class="metrics-grid" aria-label="Project summary" data-i18n-aria-label="Project summary">
             <article class="metric-card metric-card--accent">
-              <span>Current phase</span>
-              <strong data-current-phase>Getting started</strong>
-              <small><i></i> Active now</small>
+              <span><span data-i18n-key="Current phase">Current phase</span></span>
+              <strong data-current-phase><span data-i18n-key="Getting started">Getting started</span></strong>
+              <small><i></i><span data-i18n-key="Active now">Active now</span></small>
             </article>
             <article class="metric-card">
-              <span>Your open tasks</span>
+              <span><span data-i18n-key="Your open tasks">Your open tasks</span></span>
               <strong id="overview-open-tasks">0</strong>
-              <small>Small steps keep momentum</small>
+              <small><span data-i18n-key="Small steps keep momentum">Small steps keep momentum</span></small>
             </article>
             <article class="metric-card">
-              <span>Shared materials</span>
+              <span><span data-i18n-key="Shared materials">Shared materials</span></span>
               <strong id="overview-material-count">0</strong>
-              <small>Files, links and references</small>
+              <small><span data-i18n-key="Files, links and references">Files, links and references</span></small>
             </article>
             <article class="metric-card">
-              <span>Next check-in</span>
-              <strong data-next-checkin>To be scheduled</strong>
-              <small>We will confirm it together</small>
+              <span><span data-i18n-key="Next check-in">Next check-in</span></span>
+              <strong data-next-checkin><span data-i18n-key="To be scheduled">To be scheduled</span></strong>
+              <small><span data-i18n-key="We will confirm it together">We will confirm it together</span></small>
             </article>
           </div>
 
@@ -264,10 +272,10 @@
             <article class="panel focus-panel">
               <div class="panel-heading">
                 <div>
-                  <span class="section-kicker">Focus now</span>
-                  <h2>Your next best actions</h2>
+                  <span class="section-kicker"><span data-i18n-key="Focus now">Focus now</span></span>
+                  <h2><span data-i18n-key="Your next best actions">Your next best actions</span></h2>
                 </div>
-                <button class="text-button" type="button" data-view-link="tasks">All tasks <span>→</span></button>
+                <button class="text-button" type="button" data-view-link="tasks"><span data-i18n-key="All tasks">All tasks</span><span>→</span></button>
               </div>
               <div id="overview-task-list" class="compact-task-list"></div>
             </article>
@@ -275,27 +283,25 @@
             <article class="panel update-panel">
               <div class="panel-heading">
                 <div>
-                  <span class="section-kicker">From the team</span>
-                  <h2>Latest update</h2>
+                  <span class="section-kicker"><span data-i18n-key="From the team">From the team</span></span>
+                  <h2><span data-i18n-key="Latest update">Latest update</span></h2>
                 </div>
-                <span class="new-badge">New</span>
+                <span class="new-badge"><span data-i18n-key="New">New</span></span>
               </div>
               <div class="update-copy">
-                <span class="update-date" data-latest-update-date>26 July 2026</span>
-                <h3 data-latest-update-title>We are organizing the strategy foundation</h3>
-                <p data-latest-update-copy>Your intake structure is ready. The next step is collecting the strongest proof, story, and content inputs before we shape the positioning.</p>
+                <span class="update-date" data-latest-update-date><span data-i18n-key="26 July 2026">26 July 2026</span></span>
+                <h3 data-latest-update-title><span data-i18n-key="We are organizing the strategy foundation">We are organizing the strategy foundation</span></h3>
+                <p data-latest-update-copy><span data-i18n-key="Your intake structure is ready. The next step is collecting the strongest proof, story, and content inputs before we shape the positioning.">Your intake structure is ready. The next step is collecting the strongest proof, story, and content inputs before we shape the positioning.</span></p>
               </div>
-              <button class="secondary-button secondary-button--full" type="button" data-view-link="progress">
-                Read all project updates
-              </button>
+              <button class="secondary-button secondary-button--full" type="button" data-view-link="progress"><span data-i18n-key="Read all project updates">Read all project updates</span></button>
             </article>
           </div>
 
           <article class="panel knowledge-strip">
             <div class="knowledge-strip__intro">
-              <span class="section-kicker">Recommended for you</span>
-              <h2>Learn while we build</h2>
-              <p>Short, practical materials connected to the work happening in your project.</p>
+              <span class="section-kicker"><span data-i18n-key="Recommended for you">Recommended for you</span></span>
+              <h2><span data-i18n-key="Learn while we build">Learn while we build</span></h2>
+              <p><span data-i18n-key="Short, practical materials connected to the work happening in your project.">Short, practical materials connected to the work happening in your project.</span></p>
             </div>
             <div id="overview-knowledge-list" class="knowledge-strip__items"></div>
           </article>
@@ -304,20 +310,20 @@
         <section class="portal-view" data-view="strategy" aria-labelledby="strategy-title">
           <div class="page-heading strategy-page-heading">
             <div>
-              <span class="section-kicker">Your working strategy</span>
-              <h1 id="strategy-title">Turn project knowledge into clear decisions.</h1>
-              <p>This page connects what we know about your project with the marketing system we are building. Facts, hypotheses, and missing inputs stay visibly separate.</p>
+              <span class="section-kicker"><span data-i18n-key="Your working strategy">Your working strategy</span></span>
+              <h1 id="strategy-title"><span data-i18n-key="Turn project knowledge into clear decisions.">Turn project knowledge into clear decisions.</span></h1>
+              <p><span data-i18n-key="This page connects what we know about your project with the marketing system we are building. Facts, hypotheses, and missing inputs stay visibly separate.">This page connects what we know about your project with the marketing system we are building. Facts, hypotheses, and missing inputs stay visibly separate.</span></p>
             </div>
-            <button class="secondary-button" type="button" data-view-link="forms">Validate the inputs</button>
+            <button class="secondary-button" type="button" data-view-link="forms"><span data-i18n-key="Validate the inputs">Validate the inputs</span></button>
           </div>
 
           <article class="panel strategy-empty-state" id="strategy-empty-state" hidden>
             <span class="future-panel__index">01</span>
             <div>
-              <span class="section-kicker">Your strategy space is ready</span>
-              <h2>Your strategy will appear here after the first project brief.</h2>
-              <p>We will turn your information, source files, research, and decisions into the same working system—without mixing it with another client’s project.</p>
-              <button class="secondary-button" type="button" data-view-link="forms">Start with the project brief</button>
+              <span class="section-kicker"><span data-i18n-key="Your strategy space is ready">Your strategy space is ready</span></span>
+              <h2><span data-i18n-key="Your strategy will appear here after the first project brief.">Your strategy will appear here after the first project brief.</span></h2>
+              <p><span data-i18n-key="We will turn your information, source files, research, and decisions into the same working system—without mixing it with another client’s project.">We will turn your information, source files, research, and decisions into the same working system—without mixing it with another client’s project.</span></p>
+              <button class="secondary-button" type="button" data-view-link="forms"><span data-i18n-key="Start with the project brief">Start with the project brief</span></button>
             </div>
           </article>
 
@@ -325,33 +331,33 @@
           <div class="strategy-source-bar">
             <div>
               <span class="strategy-live-dot"></span>
-              <strong id="strategy-version">Working strategy</strong>
+              <strong id="strategy-version"><span data-i18n-key="Working strategy">Working strategy</span></strong>
             </div>
-            <span id="strategy-source">Source details</span>
+            <span id="strategy-source"><span data-i18n-key="Source details">Source details</span></span>
           </div>
 
           <article class="strategy-hero panel">
             <div class="strategy-hero__copy">
-              <span class="section-kicker">Strategic direction</span>
-              <h2 id="strategy-positioning">Positioning direction</h2>
-              <p id="strategy-direction">Direction summary</p>
+              <span class="section-kicker"><span data-i18n-key="Strategic direction">Strategic direction</span></span>
+              <h2 id="strategy-positioning"><span data-i18n-key="Positioning direction">Positioning direction</span></h2>
+              <p id="strategy-direction"><span data-i18n-key="Direction summary">Direction summary</span></p>
             </div>
             <div class="north-star-card">
-              <span>North-star outcome</span>
-              <strong id="strategy-north-star">Validated project outcome</strong>
-              <small>The result that connects project activity to an agreed goal.</small>
+              <span><span data-i18n-key="North-star outcome">North-star outcome</span></span>
+              <strong id="strategy-north-star"><span data-i18n-key="Validated project outcome">Validated project outcome</span></strong>
+              <small><span data-i18n-key="The result that connects project activity to an agreed goal.">The result that connects project activity to an agreed goal.</span></small>
             </div>
           </article>
 
-          <div id="strategy-evidence-grid" class="strategy-evidence-grid" aria-label="Current project evidence"></div>
+          <div id="strategy-evidence-grid" class="strategy-evidence-grid" aria-label="Current project evidence" data-i18n-aria-label="Current project evidence"></div>
 
           <section class="strategy-section">
             <div class="strategy-section__heading">
               <div>
-                <span class="section-kicker">Brand compass</span>
-                <h2>Define a recognizable direction with clear boundaries.</h2>
+                <span class="section-kicker"><span data-i18n-key="Brand compass">Brand compass</span></span>
+                <h2><span data-i18n-key="Define a recognizable direction with clear boundaries.">Define a recognizable direction with clear boundaries.</span></h2>
               </div>
-              <p>The useful ideas from the positioning board are translated into roles and boundaries that can guide content, visuals, and decisions.</p>
+              <p><span data-i18n-key="The useful ideas from the positioning board are translated into roles and boundaries that can guide content, visuals, and decisions.">The useful ideas from the positioning board are translated into roles and boundaries that can guide content, visuals, and decisions.</span></p>
             </div>
             <div id="strategy-brand-compass" class="strategy-brand-compass"></div>
           </section>
@@ -360,10 +366,10 @@
             <div>
               <div class="strategy-section__heading strategy-section__heading--stacked">
                 <div>
-                  <span class="section-kicker">Connected audiences</span>
-                  <h2>Separate the people affected from the people deciding.</h2>
+                  <span class="section-kicker"><span data-i18n-key="Connected audiences">Connected audiences</span></span>
+                  <h2><span data-i18n-key="Separate the people affected from the people deciding.">Separate the people affected from the people deciding.</span></h2>
                 </div>
-                <p>Different audiences may need different context, evidence, and next steps. The authenticated strategy records the distinctions that matter for this project.</p>
+                <p><span data-i18n-key="Different audiences may need different context, evidence, and next steps. The authenticated strategy records the distinctions that matter for this project.">Different audiences may need different context, evidence, and next steps. The authenticated strategy records the distinctions that matter for this project.</span></p>
               </div>
               <div id="strategy-audiences" class="strategy-audiences"></div>
             </div>
@@ -371,8 +377,8 @@
             <aside class="panel strategy-guardrails-panel">
               <div class="panel-heading">
                 <div>
-                  <span class="section-kicker">Expression guardrails</span>
-                  <h2>What belongs in the brand</h2>
+                  <span class="section-kicker"><span data-i18n-key="Expression guardrails">Expression guardrails</span></span>
+                  <h2><span data-i18n-key="What belongs in the brand">What belongs in the brand</span></h2>
                 </div>
               </div>
               <div id="strategy-guardrails" class="strategy-guardrails"></div>
@@ -382,10 +388,10 @@
           <section class="strategy-section">
             <div class="strategy-section__heading">
               <div>
-                <span class="section-kicker">Confidence map</span>
-                <h2>What is known—and what still needs validation</h2>
+                <span class="section-kicker"><span data-i18n-key="Confidence map">Confidence map</span></span>
+                <h2><span data-i18n-key="What is known—and what still needs validation">What is known—and what still needs validation</span></h2>
               </div>
-              <p>We never present an assumption as a client fact. This keeps the strategy useful while discovery is still in progress.</p>
+              <p><span data-i18n-key="We never present an assumption as a client fact. This keeps the strategy useful while discovery is still in progress.">We never present an assumption as a client fact. This keeps the strategy useful while discovery is still in progress.</span></p>
             </div>
             <div id="strategy-truth-grid" class="strategy-truth-grid"></div>
           </section>
@@ -393,10 +399,10 @@
           <section class="strategy-section">
             <div class="strategy-section__heading">
               <div>
-                <span class="section-kicker">Customer journey</span>
-                <h2>The project journey we are building</h2>
+                <span class="section-kicker"><span data-i18n-key="Customer journey">Customer journey</span></span>
+                <h2><span data-i18n-key="The project journey we are building">The project journey we are building</span></h2>
               </div>
-              <p>Every touchpoint needs a role. Attention should lead toward an agreed project outcome—not activity without purpose.</p>
+              <p><span data-i18n-key="Every touchpoint needs a role. Attention should lead toward an agreed project outcome—not activity without purpose.">Every touchpoint needs a role. Attention should lead toward an agreed project outcome—not activity without purpose.</span></p>
             </div>
             <div class="strategy-funnel panel" id="strategy-funnel"></div>
           </section>
@@ -405,10 +411,10 @@
             <div>
               <div class="strategy-section__heading strategy-section__heading--stacked">
                 <div>
-                  <span class="section-kicker">Content architecture</span>
-                  <h2>Repeatable communication themes</h2>
+                  <span class="section-kicker"><span data-i18n-key="Content architecture">Content architecture</span></span>
+                  <h2><span data-i18n-key="Repeatable communication themes">Repeatable communication themes</span></h2>
                 </div>
-                <p>Each pillar has a job in the funnel, so content is easier to plan and evaluate.</p>
+                <p><span data-i18n-key="Each pillar has a job in the funnel, so content is easier to plan and evaluate.">Each pillar has a job in the funnel, so content is easier to plan and evaluate.</span></p>
               </div>
               <div id="strategy-content-pillars" class="strategy-content-pillars"></div>
             </div>
@@ -416,8 +422,8 @@
             <aside class="panel strategy-gates-panel">
               <div class="panel-heading">
                 <div>
-                  <span class="section-kicker">Decision gates</span>
-                  <h2>What happens next</h2>
+                  <span class="section-kicker"><span data-i18n-key="Decision gates">Decision gates</span></span>
+                  <h2><span data-i18n-key="What happens next">What happens next</span></h2>
                 </div>
               </div>
               <div id="strategy-decision-gates" class="strategy-decision-gates"></div>
@@ -425,11 +431,11 @@
           </section>
 
           <article class="strategy-method-note">
-            <span class="future-panel__index">How</span>
+            <span class="future-panel__index"><span data-i18n-key="How">How</span></span>
             <div>
-              <span class="section-kicker">Reusable for every client</span>
-              <h2>Brief → evidence → hypotheses → decisions → tasks → measurement</h2>
-              <p>This area presents authenticated project direction once secure workspace records are connected. Client-specific content is never compiled into the public interface.</p>
+              <span class="section-kicker"><span data-i18n-key="Reusable for every client">Reusable for every client</span></span>
+              <h2><span data-i18n-key="Brief → evidence → hypotheses → decisions → tasks → measurement">Brief → evidence → hypotheses → decisions → tasks → measurement</span></h2>
+              <p><span data-i18n-key="This area presents authenticated project direction once secure workspace records are connected. Client-specific content is never compiled into the public interface.">This area presents authenticated project direction once secure workspace records are connected. Client-specific content is never compiled into the public interface.</span></p>
             </div>
           </article>
           </div>
@@ -438,12 +444,12 @@
         <section class="portal-view" data-view="progress" aria-labelledby="progress-title">
           <div class="page-heading">
             <div>
-              <span class="section-kicker">Project roadmap</span>
-              <h1 id="progress-title">Follow the work, without chasing updates.</h1>
-              <p>Every phase has a clear purpose, visible status, and the next decision we need to make together.</p>
+              <span class="section-kicker"><span data-i18n-key="Project roadmap">Project roadmap</span></span>
+              <h1 id="progress-title"><span data-i18n-key="Follow the work, without chasing updates.">Follow the work, without chasing updates.</span></h1>
+              <p><span data-i18n-key="Every phase has a clear purpose, visible status, and the next decision we need to make together.">Every phase has a clear purpose, visible status, and the next decision we need to make together.</span></p>
             </div>
             <div class="heading-status">
-              <span>Overall progress</span>
+              <span><span data-i18n-key="Overall progress">Overall progress</span></span>
               <strong id="roadmap-progress-value">0%</strong>
             </div>
           </div>
@@ -453,8 +459,8 @@
             <aside class="panel activity-panel">
               <div class="panel-heading">
                 <div>
-                  <span class="section-kicker">Activity</span>
-                  <h2>Project updates</h2>
+                  <span class="section-kicker"><span data-i18n-key="Activity">Activity</span></span>
+                  <h2><span data-i18n-key="Project updates">Project updates</span></h2>
                 </div>
               </div>
               <div id="activity-timeline" class="activity-timeline"></div>
@@ -465,23 +471,23 @@
         <section class="portal-view" data-view="tasks" aria-labelledby="tasks-title">
           <div class="page-heading">
             <div>
-              <span class="section-kicker">Your action list</span>
-              <h1 id="tasks-title">Clear tasks. Visible momentum.</h1>
-              <p>Complete the inputs that help us move your project forward. Your checks are saved to your workspace and synced when available.</p>
+              <span class="section-kicker"><span data-i18n-key="Your action list">Your action list</span></span>
+              <h1 id="tasks-title"><span data-i18n-key="Clear tasks. Visible momentum.">Clear tasks. Visible momentum.</span></h1>
+              <p><span data-i18n-key="Complete the inputs that help us move your project forward. Your checks are saved to your workspace and synced when available.">Complete the inputs that help us move your project forward. Your checks are saved to your workspace and synced when available.</span></p>
             </div>
             <div class="heading-status">
-              <span>Completed</span>
+              <span><span data-i18n-key="Completed">Completed</span></span>
               <strong id="task-completion-ratio">0 / 0</strong>
             </div>
           </div>
 
           <div class="task-toolbar">
-            <div class="filter-group" aria-label="Filter tasks">
-              <button class="filter-button is-active" type="button" data-task-filter="all" aria-pressed="true">All</button>
-              <button class="filter-button" type="button" data-task-filter="open" aria-pressed="false">Open</button>
-              <button class="filter-button" type="button" data-task-filter="done" aria-pressed="false">Completed</button>
+            <div class="filter-group" aria-label="Filter tasks" data-i18n-aria-label="Filter tasks">
+              <button class="filter-button is-active" type="button" data-task-filter="all" aria-pressed="true"><span data-i18n-key="All">All</span></button>
+              <button class="filter-button" type="button" data-task-filter="open" aria-pressed="false"><span data-i18n-key="Open">Open</span></button>
+              <button class="filter-button" type="button" data-task-filter="done" aria-pressed="false"><span data-i18n-key="Completed">Completed</span></button>
             </div>
-            <span class="local-save-note"><i></i> Saved automatically</span>
+            <span class="local-save-note"><i></i><span data-i18n-key="Saved automatically">Saved automatically</span></span>
           </div>
           <div id="full-task-list" class="full-task-list"></div>
         </section>
@@ -489,17 +495,17 @@
         <section class="portal-view" data-view="materials" aria-labelledby="materials-title">
           <div class="page-heading">
             <div>
-              <span class="section-kicker">Shared library</span>
-              <h1 id="materials-title">Everything we are working with.</h1>
-              <p>Strategy documents, references, client inputs, and deliverables will live here as the project grows.</p>
+              <span class="section-kicker"><span data-i18n-key="Shared library">Shared library</span></span>
+              <h1 id="materials-title"><span data-i18n-key="Everything we are working with.">Everything we are working with.</span></h1>
+              <p><span data-i18n-key="Strategy documents, references, client inputs, and deliverables will live here as the project grows.">Strategy documents, references, client inputs, and deliverables will live here as the project grows.</span></p>
             </div>
-            <button class="secondary-button" type="button" data-view-link="questions">Request a material</button>
+            <button class="secondary-button" type="button" data-view-link="questions"><span data-i18n-key="Request a material">Request a material</span></button>
           </div>
 
           <div class="material-summary">
-            <div><strong id="material-total-count">0</strong><span>Total items</span></div>
-            <div><strong id="material-ready-count">0</strong><span>Ready to view</span></div>
-            <div><strong id="material-waiting-count">0</strong><span>Waiting for input</span></div>
+            <div><strong id="material-total-count">0</strong><span><span data-i18n-key="Total items">Total items</span></span></div>
+            <div><strong id="material-ready-count">0</strong><span><span data-i18n-key="Ready to view">Ready to view</span></span></div>
+            <div><strong id="material-waiting-count">0</strong><span><span data-i18n-key="Waiting for input">Waiting for input</span></span></div>
           </div>
           <div id="material-grid" class="material-grid"></div>
         </section>
@@ -507,21 +513,21 @@
         <section class="portal-view" data-view="knowledge" aria-labelledby="knowledge-title">
           <div class="page-heading">
             <div>
-              <span class="section-kicker">Knowledge base</span>
-              <h1 id="knowledge-title">Understand the strategy behind the work.</h1>
-              <p>Useful, focused explanations—not a generic course. Start with what is relevant to your project now.</p>
+              <span class="section-kicker"><span data-i18n-key="Knowledge base">Knowledge base</span></span>
+              <h1 id="knowledge-title"><span data-i18n-key="Understand the strategy behind the work.">Understand the strategy behind the work.</span></h1>
+              <p><span data-i18n-key="Useful, focused explanations—not a generic course. Start with what is relevant to your project now.">Useful, focused explanations—not a generic course. Start with what is relevant to your project now.</span></p>
             </div>
           </div>
 
           <div class="featured-learning panel">
             <div>
-              <span class="section-kicker">Start here · 6 min</span>
-              <h2>From attention to booking: your simple marketing system</h2>
-              <p>See how positioning, proof, content, and calls to action connect into one client journey.</p>
-              <button class="primary-button" type="button" data-article-open="marketing-system">Open guide <span>→</span></button>
+              <span class="section-kicker"><span data-i18n-key="Start here · 6 min">Start here · 6 min</span></span>
+              <h2><span data-i18n-key="From attention to booking: your simple marketing system">From attention to booking: your simple marketing system</span></h2>
+              <p><span data-i18n-key="See how positioning, proof, content, and calls to action connect into one client journey.">See how positioning, proof, content, and calls to action connect into one client journey.</span></p>
+              <button class="primary-button" type="button" data-article-open="marketing-system"><span data-i18n-key="Open guide">Open guide</span><span>→</span></button>
             </div>
             <div class="learning-map" aria-hidden="true">
-              <span>Attention</span><i>→</i><span>Trust</span><i>→</i><span>Action</span>
+              <span><span data-i18n-key="Attention">Attention</span></span><i>→</i><span><span data-i18n-key="Trust">Trust</span></span><i>→</i><span><span data-i18n-key="Action">Action</span></span>
             </div>
           </div>
           <div id="knowledge-grid" class="knowledge-grid"></div>
@@ -530,9 +536,9 @@
         <section class="portal-view" data-view="questions" aria-labelledby="questions-title">
           <div class="page-heading">
             <div>
-              <span class="section-kicker">Communication</span>
-              <h1 id="questions-title">Keep every question connected to the project.</h1>
-              <p>Send a structured question or request. It stays connected to this workspace and appears in Agency OS.</p>
+              <span class="section-kicker"><span data-i18n-key="Communication">Communication</span></span>
+              <h1 id="questions-title"><span data-i18n-key="Keep every question connected to the project.">Keep every question connected to the project.</span></h1>
+              <p><span data-i18n-key="Send a structured question or request. It stays connected to this workspace and appears in Agency OS.">Send a structured question or request. It stays connected to this workspace and appears in Agency OS.</span></p>
             </div>
           </div>
 
@@ -540,37 +546,37 @@
             <form class="panel question-composer" id="question-form">
               <div class="panel-heading">
                 <div>
-                  <span class="section-kicker">New message</span>
-                  <h2>Ask the project team</h2>
+                  <span class="section-kicker"><span data-i18n-key="New message">New message</span></span>
+                  <h2><span data-i18n-key="Ask the project team">Ask the project team</span></h2>
                 </div>
               </div>
-              <label for="question-topic">Topic</label>
+              <label for="question-topic"><span data-i18n-key="Topic">Topic</span></label>
               <select id="question-topic" name="topic">
-                <option value="Strategy">Strategy</option>
-                <option value="Task">A task</option>
-                <option value="Material">A material or file</option>
-                <option value="Timeline">Timeline or progress</option>
-                <option value="Other">Something else</option>
+                <option value="Strategy" data-i18n-key="Strategy">Strategy</option>
+                <option value="Task" data-i18n-key="A task">A task</option>
+                <option value="Material" data-i18n-key="A material or file">A material or file</option>
+                <option value="Timeline" data-i18n-key="Timeline or progress">Timeline or progress</option>
+                <option value="Other" data-i18n-key="Something else">Something else</option>
               </select>
-              <label for="question-message">Your question or note</label>
+              <label for="question-message"><span data-i18n-key="Your question or note">Your question or note</span></label>
               <textarea
                 id="question-message"
                 name="message"
                 rows="7"
-                placeholder="Write the context, decision, or question you want to discuss..."
+                placeholder="Write the context, decision, or question you want to discuss..." data-i18n-placeholder="Write the context, decision, or question you want to discuss..."
                 required
               ></textarea>
               <div class="composer-footer">
-                <span>Sent securely to the assigned project team.</span>
-                <button class="primary-button" type="submit">Send request</button>
+                <span><span data-i18n-key="Sent securely to the assigned project team.">Sent securely to the assigned project team.</span></span>
+                <button class="primary-button" type="submit"><span data-i18n-key="Send request">Send request</span></button>
               </div>
             </form>
 
             <aside class="panel saved-questions">
               <div class="panel-heading">
                 <div>
-                  <span class="section-kicker">Your workspace</span>
-                  <h2>Project requests</h2>
+                  <span class="section-kicker"><span data-i18n-key="Your workspace">Your workspace</span></span>
+                  <h2><span data-i18n-key="Project requests">Project requests</span></h2>
                 </div>
                 <span class="nav-count" id="saved-question-count">0</span>
               </div>
@@ -582,20 +588,20 @@
         <section class="portal-view" data-view="forms" aria-labelledby="forms-title">
           <div class="page-heading">
             <div>
-              <span class="section-kicker">Project inputs</span>
-              <h1 id="forms-title">Forms that help us make better decisions.</h1>
-              <p>Each client can have different questionnaires here. Completed answers become part of the wider project workspace.</p>
+              <span class="section-kicker"><span data-i18n-key="Project inputs">Project inputs</span></span>
+              <h1 id="forms-title"><span data-i18n-key="Forms that help us make better decisions.">Forms that help us make better decisions.</span></h1>
+              <p><span data-i18n-key="Each client can have different questionnaires here. Completed answers become part of the wider project workspace.">Each client can have different questionnaires here. Completed answers become part of the wider project workspace.</span></p>
             </div>
           </div>
 
           <div id="forms-grid" class="forms-grid"></div>
 
           <article class="future-panel">
-            <span class="future-panel__index">Next</span>
+            <span class="future-panel__index"><span data-i18n-key="Next">Next</span></span>
             <div>
-              <span class="section-kicker">Designed to grow</span>
-              <h2>New forms will appear when your project needs them.</h2>
-              <p>Content reviews, approvals, feedback rounds, launch checklists, and custom research forms can all become part of this space.</p>
+              <span class="section-kicker"><span data-i18n-key="Designed to grow">Designed to grow</span></span>
+              <h2><span data-i18n-key="New forms will appear when your project needs them.">New forms will appear when your project needs them.</span></h2>
+              <p><span data-i18n-key="Content reviews, approvals, feedback rounds, launch checklists, and custom research forms can all become part of this space.">Content reviews, approvals, feedback rounds, launch checklists, and custom research forms can all become part of this space.</span></p>
             </div>
           </article>
         </section>
@@ -606,12 +612,13 @@
   <div class="mobile-backdrop" id="mobile-backdrop"></div>
 
   <dialog class="article-dialog" id="article-dialog">
-    <button class="dialog-close" id="dialog-close" type="button" aria-label="Close guide">×</button>
+    <button class="dialog-close" id="dialog-close" type="button" aria-label="Close guide" data-i18n-aria-label="Close guide">×</button>
     <div id="article-dialog-content"></div>
   </dialog>
 
   <div class="toast" id="portal-toast" role="status" aria-live="polite"></div>
 
+  <script src="client-space.i18n.js"></script>
   <script src="client-space.config.js"></script>
   <script src="client-space-auth.js"></script>
   <script src="cabinet-data.js"></script>

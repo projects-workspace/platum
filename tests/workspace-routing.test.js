@@ -12,6 +12,7 @@ function firstWorkspaceRoute(canCreate, loading = false) {
   const state = { view: 'new-workspace', capabilities: { canCreate }, active: null, data: null, editor: null, loading };
   const content = { innerHTML: '' };
   vm.runInNewContext(renderSource + '\nrender();', {
+    i18n: { apply() {}, t: String }, uiText: String,
     state, document: { getElementById: () => content }, navigation() {},
     editorView: () => 'workspace-editor', heading: () => '',
     empty: () => 'no-access', button: () => '',
@@ -43,6 +44,7 @@ for (const hasWorkspace of [false, true]) test('shared-history export visibility
   const exportControl = { hidden: false };
   const nodes = {};
   vm.runInNewContext(navigationSource + '\nnavigation();', {
+    i18n: { apply() {}, t: String, mark: String }, uiText: String,
     state: { active, workspaces: active ? [active] : [], view: 'home', capabilities: { canCreate: false } },
     root: { dataset: {}, querySelector: () => exportControl },
     document: { getElementById: id => nodes[id] ||= {}, title: '' },

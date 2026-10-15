@@ -3329,3 +3329,38 @@ textarea:focus-visible {
   color: var(--muted, #68736d);
   font-size: 12px;
 }
+
+.locale-mount {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 4px max(12px, env(safe-area-inset-right));
+}
+.locale-switcher {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border: 1px solid rgba(23, 63, 44, .18);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, .94);
+  color: #173f2c;
+  font-size: 12px;
+  font-weight: 600;
+  box-shadow: 0 4px 16px rgba(23, 63, 44, .08);
+}
+.locale-switcher select {
+  min-width: 112px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.locale-switcher:focus-within { outline: 2px solid #173f2c; outline-offset: 2px; }
+
+body:not(.is-authenticated) > .locale-mount { display: none; }
+body:not(.is-authenticated) .portal-shell { display: none; }
+.auth-card > .locale-mount { padding: 0; margin-bottom: 18px; }
+.auth-gate { overflow-y: auto; place-items: safe center; }

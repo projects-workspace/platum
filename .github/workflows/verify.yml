@@ -28,7 +28,7 @@ jobs:
         run: node scripts/check-integrity.js
 
       - name: Verify workspace management authorization
-        run: node --test tests/team-api.test.js tests/files-api.test.js tests/workspace-routing.test.js tests/calendar-domain.test.js
+        run: node --test tests/team-api.test.js tests/files-api.test.js tests/workspace-routing.test.js tests/calendar-domain.test.js tests/localization.test.js
 
       - name: Install Telegram worker dependencies
         run: npm ci --prefix bot

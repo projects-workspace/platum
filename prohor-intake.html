@@ -5,34 +5,42 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Questionnaire for preparing an artist strategy, personal brand, and booking process.">
   <meta name="robots" content="noindex, nofollow">
-  <title>Artist strategy questionnaire</title>
+  <title data-i18n-key="Artist strategy questionnaire">Artist strategy questionnaire</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="prohor-intake.css">
 </head>
 <body>
+  <div class="locale-mount"><label class="locale-switcher">
+    <span data-i18n-key="Language">Language</span>
+    <select data-language-selector aria-label="Language" data-i18n-aria-label="Language">
+      <option value="en">English</option>
+      <option value="uk">Українська</option>
+    </select>
+  </label></div>
+
   <main class="intake-shell">
     <section class="intake-hero" aria-labelledby="page-title">
       <div class="hero-copy">
-        <p class="eyebrow">Strategy questionnaire</p>
-        <h1 id="page-title">Artist strategy</h1>
-        <p class="hero-lede">Focused sections about booking, content, narrative, EPK, and media strategy. Answers remain only in this browser.</p>
+        <p class="eyebrow"><span data-i18n-key="Strategy questionnaire">Strategy questionnaire</span></p>
+        <h1 id="page-title"><span data-i18n-key="Artist strategy">Artist strategy</span></h1>
+        <p class="hero-lede"><span data-i18n-key="Focused sections about booking, content, narrative, EPK, and media strategy. Answers remain only in this browser.">Focused sections about booking, content, narrative, EPK, and media strategy. Answers remain only in this browser.</span></p>
       </div>
 
       <div class="hero-art" aria-hidden="true">
         <div class="hero-art__frame">
-          <span>Artist</span>
-          <strong>Strategy intake</strong>
-          <small>Booking · Content · Narrative · EPK</small>
+          <span><span data-i18n-key="Artist">Artist</span></span>
+          <strong><span data-i18n-key="Strategy intake">Strategy intake</span></strong>
+          <small><span data-i18n-key="Booking · Content · Narrative · EPK">Booking · Content · Narrative · EPK</span></small>
         </div>
       </div>
     </section>
 
-    <section class="intake-workspace" aria-label="Questionnaire workspace">
+    <section class="intake-workspace" aria-label="Questionnaire workspace" data-i18n-aria-label="Questionnaire workspace">
       <aside class="progress-panel">
         <div class="progress-topline">
-          <span>Progress</span>
+          <span><span data-i18n-key="Progress">Progress</span></span>
           <strong id="progress-percent">0%</strong>
         </div>
         <div class="progress-track" aria-hidden="true">
@@ -40,9 +48,9 @@
         </div>
         <div class="intake-status" role="status" aria-live="polite">
           <span id="save-indicator" class="save-indicator"></span>
-          <span id="storage-indicator" class="storage-indicator">Data remains only on this device</span>
+          <span id="storage-indicator" class="storage-indicator"><span data-i18n-key="Data remains only on this device">Data remains only on this device</span></span>
         </div>
-        <ol id="section-nav" class="section-nav" aria-label="Question sections"></ol>
+        <ol id="section-nav" class="section-nav" aria-label="Question sections" data-i18n-aria-label="Question sections"></ol>
       </aside>
 
       <form id="intake-form" class="form-stage" novalidate>
@@ -51,13 +59,14 @@
     </section>
 
     <footer class="intake-footer">
-      <span>Local draft</span>
-      <span>Answers are not sent to the team automatically</span>
+      <span><span data-i18n-key="Local draft">Local draft</span></span>
+      <span><span data-i18n-key="Answers are not sent to the team automatically">Answers are not sent to the team automatically</span></span>
     </footer>
   </main>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
+  <script src="client-space.i18n.js"></script>
   <script src="prohor-intake.js"></script>
 </body>
 </html>

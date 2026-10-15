@@ -1,9 +1,11 @@
 (function () {
   'use strict';
 
-  const staticTextSources = new WeakMap();
-  const attributeSources = new WeakMap();
-  const currentLanguage = 'en';
+  const i18n = window.PLATUM_I18N;
+  const ui = source => i18n.mark(source);
+  const starterRecords = new WeakSet();
+  const starterText = (record, key) => starterRecords.has(record) ? ui(record[key]) : escapeHtml(record[key]);
+  function registerStarter(value) { if (!value || typeof value !== 'object') return value; starterRecords.add(value); Object.values(value).forEach(registerStarter); return value; }
   let activeDataWorkspace = null;
   let workspaceAccess = { memberships: [], workspaces: [], isOperator: false, mode: 'local' };
   let activeBundle = null;
@@ -142,10 +144,6 @@
     }
   }
 
-  function readLanguagePreference() {
-    return 'en';
-  }
-
   function clientDisplayName(user) {
     const metadata = user?.user_metadata || {};
     return metadata.full_name || metadata.name || metadata.username || 'Client';
@@ -168,7 +166,7 @@
       ['positioning', 'proof', 'content-system', 'marketing-system'].includes(article.id)
     );
 
-    return {
+    return registerStarter({
       id: `starter-${storageIdentity || 'client'}`,
       name: 'New Client Workspace',
       contactName,
@@ -266,7 +264,7 @@
           timing: 'Coming later',
         },
       ],
-    };
+    });
   }
 
   function isUuid(value) {
@@ -275,7 +273,7 @@
 
   function formatDate(value) {
     if (!value) return 'Recently';
-    return new Intl.DateTimeFormat('en', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(value));
+    return i18n.dateText(value);
   }
 
   function formatLabel(value) {
@@ -473,7 +471,7 @@
     document.querySelectorAll('[data-client-contact]').forEach((element) => {
       element.textContent = clientDisplayName(activeAuthContext?.user);
     });
-    dom.sidebarAccessRole.textContent = 'Admin access';
+    i18n.setText(dom.sidebarAccessRole, 'Admin access');
     switchView('admin');
     translateDocument();
   }
@@ -482,7 +480,7 @@
     if (!isAdminMode) return;
     activateClient(activeAuthContext, clientId, true);
     await hydrateClientState();
-    dom.sidebarAccessRole.textContent = 'Admin preview';
+    i18n.setText(dom.sidebarAccessRole, 'Admin preview');
     renderAllContent();
     switchView('overview');
     showToast(clientId === 'starter' ? 'New client preview opened.' : 'Client cabinet opened.');
@@ -497,44 +495,10 @@
       .replace(/'/g, '&#039;');
   }
 
-  function translate(value) {
-    return String(value);
-  }
+  function translate(value) { return i18n.t(value); }
 
   function translateDocument() {
-    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
-    const textNodes = [];
-    let node = walker.nextNode();
-
-    while (node) {
-      const parent = node.parentElement;
-      if (parent && !parent.closest('script, style, [data-no-translate]') && node.nodeValue.trim()) {
-        textNodes.push(node);
-      }
-      node = walker.nextNode();
-    }
-
-    textNodes.forEach((textNode) => {
-      if (!staticTextSources.has(textNode)) staticTextSources.set(textNode, textNode.nodeValue);
-      const source = staticTextSources.get(textNode);
-      const match = source.match(/^(\s*)([\s\S]*?)(\s*)$/);
-      textNode.nodeValue = `${match[1]}${translate(match[2])}${match[3]}`;
-    });
-
-    document.querySelectorAll('[placeholder], [title], [aria-label]').forEach((element) => {
-      if (!attributeSources.has(element)) attributeSources.set(element, {});
-      const sources = attributeSources.get(element);
-
-      ['placeholder', 'title', 'aria-label'].forEach((attribute) => {
-        if (!element.hasAttribute(attribute)) return;
-        if (!Object.prototype.hasOwnProperty.call(sources, attribute)) {
-          sources[attribute] = element.getAttribute(attribute);
-        }
-        element.setAttribute(attribute, translate(sources[attribute]));
-      });
-    });
-
-    document.documentElement.lang = currentLanguage;
+    i18n.apply();
     const activeNav = document.querySelector('[data-view-target].is-active span:nth-child(2)');
     if (activeNav) dom.currentViewLabel.textContent = activeNav.textContent;
   }
@@ -548,7 +512,7 @@
 
   function applyClientContent() {
     document.querySelectorAll('[data-client-name]').forEach((element) => {
-      element.textContent = client.name;
+      if (starterRecords.has(client)) i18n.setText(element, client.name); else { element.removeAttribute('data-i18n-key'); element.textContent = client.name; }
     });
     document.querySelectorAll('[data-client-contact]').forEach((element) => {
       element.textContent = client.contactName;
@@ -557,26 +521,26 @@
       element.textContent = client.initials;
     });
     document.querySelectorAll('[data-current-phase]').forEach((element) => {
-      element.textContent = client.currentPhase;
+      if (starterRecords.has(client)) i18n.setText(element, client.currentPhase); else { element.removeAttribute('data-i18n-key'); element.textContent = client.currentPhase; }
     });
     document.querySelectorAll('[data-next-checkin]').forEach((element) => {
-      element.textContent = client.nextCheckin;
+      if (starterRecords.has(client)) i18n.setText(element, client.nextCheckin); else { element.removeAttribute('data-i18n-key'); element.textContent = client.nextCheckin; }
     });
     document.querySelectorAll('[data-latest-update-date]').forEach((element) => {
-      element.textContent = client.latestUpdate.date;
+      if (starterRecords.has(client)) i18n.setText(element, client.latestUpdate.date); else { element.removeAttribute('data-i18n-key'); element.textContent = client.latestUpdate.date; }
     });
     document.querySelectorAll('[data-latest-update-title]').forEach((element) => {
-      element.textContent = client.latestUpdate.title;
+      if (starterRecords.has(client)) i18n.setText(element, client.latestUpdate.title); else { element.removeAttribute('data-i18n-key'); element.textContent = client.latestUpdate.title; }
     });
     document.querySelectorAll('[data-latest-update-copy]').forEach((element) => {
-      element.textContent = client.latestUpdate.copy;
+      if (starterRecords.has(client)) i18n.setText(element, client.latestUpdate.copy); else { element.removeAttribute('data-i18n-key'); element.textContent = client.latestUpdate.copy; }
     });
 
     dom.projectProgressValue.textContent = `${client.progress}%`;
     dom.roadmapProgressValue.textContent = `${client.progress}%`;
 
     dom.greeting.textContent = getGreeting();
-    document.title = `${client.name} — Platum`;
+    document.title = `${starterRecords.has(client) ? i18n.t(client.name) : client.name} — Platum`;
   }
 
   function switchView(viewName) {
@@ -648,12 +612,15 @@
   }
 
   function taskCheckbox(task) {
+    const parameters = { title: starterRecords.has(task) ? { __platumUi: task.title } : task.title };
     return `
       <input
         class="task-checkbox"
         type="checkbox"
         data-task-checkbox="${escapeHtml(task.id)}"
-        aria-label="${escapeHtml(translate('Mark task as completed'))}: ${escapeHtml(translate(task.title))}"
+        data-i18n-aria-label="Mark task as completed: {title}"
+        data-i18n-params="${escapeHtml(JSON.stringify(parameters))}"
+        aria-label="${escapeHtml(i18n.t('Mark task as completed: {title}', parameters))}"
         ${isTaskDone(task.id) ? 'checked' : ''}
       >
     `;
@@ -668,10 +635,10 @@
       <article class="compact-task ${isTaskDone(task.id) ? 'is-done' : ''}">
         ${taskCheckbox(task)}
         <div class="compact-task__copy">
-          <strong>${escapeHtml(task.title)}</strong>
-          <span>${escapeHtml(task.effort)} · ${escapeHtml(task.category)}</span>
+          <strong>${starterText(task, 'title')}</strong>
+          <span>${starterText(task, 'effort')} · ${starterText(task, 'category')}</span>
         </div>
-        <span class="task-status">${isTaskDone(task.id) ? 'Done' : escapeHtml(task.priority)}</span>
+        <span class="task-status">${isTaskDone(task.id) ? ui('Done') : ui(task.priority)}</span>
       </article>
     `).join('');
 
@@ -686,17 +653,17 @@
           <article class="full-task ${isTaskDone(task.id) ? 'is-done' : ''}">
             ${taskCheckbox(task)}
             <div class="full-task__main">
-              <h2>${escapeHtml(task.title)}</h2>
-              <p>${escapeHtml(task.description)}</p>
+              <h2>${starterText(task, 'title')}</h2>
+              <p>${starterText(task, 'description')}</p>
               <div class="full-task__meta">
-                <span class="meta-chip">${escapeHtml(task.category)}</span>
-                <span class="meta-chip">${escapeHtml(task.effort)}</span>
+                <span class="meta-chip">${starterText(task, 'category')}</span>
+                <span class="meta-chip">${starterText(task, 'effort')}</span>
               </div>
             </div>
-            <span class="task-status">${isTaskDone(task.id) ? 'Completed' : escapeHtml(task.priority)}</span>
+            <span class="task-status">${isTaskDone(task.id) ? ui('Completed') : ui(task.priority)}</span>
           </article>
         `).join('')
-      : '<div class="empty-state">No tasks match this filter.</div>';
+      : '<div class="empty-state"><span data-i18n-key="No tasks match this filter.">No tasks match this filter.</span></div>';
 
     dom.overviewOpenTasks.textContent = openTasks.length;
     dom.sidebarTaskCount.textContent = openTasks.length;
@@ -736,7 +703,7 @@
     dom.strategyBrandCompass.innerHTML = strategy.brandCompass.map((item) => `
       <article class="brand-compass-card brand-compass-card--${escapeHtml(item.key)}">
         <span>${escapeHtml(item.label)}</span>
-        <h3>${escapeHtml(item.title)}</h3>
+        <h3>${starterText(item, 'title')}</h3>
         <p>${escapeHtml(item.detail)}</p>
       </article>
     `).join('');
@@ -815,21 +782,21 @@
       <article class="roadmap-item is-${escapeHtml(item.status)}">
         <span class="roadmap-index">${item.status === 'done' ? '✓' : String(index + 1).padStart(2, '0')}</span>
         <div class="roadmap-copy">
-          <h2>${escapeHtml(item.title)}</h2>
-          <p>${escapeHtml(item.description)}</p>
+          <h2>${starterText(item, 'title')}</h2>
+          <p>${starterText(item, 'description')}</p>
         </div>
         <div class="roadmap-meta">
-          <strong>${item.status === 'active' ? 'In progress' : item.status}</strong>
-          <span>${escapeHtml(item.timing)}</span>
+          <strong>${ui(item.status === 'active' ? 'In progress' : item.status)}</strong>
+          <span>${starterText(item, 'timing')}</span>
         </div>
       </article>
     `).join('');
 
     dom.activityTimeline.innerHTML = client.updates.map((update) => `
       <article class="activity-item">
-        <span>${escapeHtml(update.date)}</span>
-        <h3>${escapeHtml(update.title)}</h3>
-        <p>${escapeHtml(update.copy)}</p>
+        <span>${starterText(update, 'date')}</span>
+        <h3>${starterText(update, 'title')}</h3>
+        <p>${starterText(update, 'copy')}</p>
       </article>
     `).join('');
   }
@@ -846,29 +813,29 @@
       <article class="material-card">
         <div class="material-card__top">
           <span class="file-type file-type--${escapeHtml(material.style)}">${escapeHtml(material.type)}</span>
-          <span class="material-status ${material.status === 'waiting' ? 'is-waiting' : ''}">${escapeHtml(material.status)}</span>
+          <span class="material-status ${material.status === 'waiting' ? 'is-waiting' : ''}">${ui(material.status)}</span>
         </div>
         <h2>${escapeHtml(material.title)}</h2>
         <p>${escapeHtml(material.description)}</p>
         <div class="card-footer">
           <span>${escapeHtml(material.meta)}</span>
           ${material.targetView
-            ? `<button class="card-action" type="button" data-view-link="${escapeHtml(material.targetView)}">${escapeHtml(material.action)} →</button>`
+            ? `<button class="card-action" type="button" data-view-link="${escapeHtml(material.targetView)}">${ui(material.action)} →</button>`
             : material.href
-              ? `<a class="card-action" href="${escapeHtml(material.href)}" target="_blank" rel="noopener noreferrer">${escapeHtml(material.action)} →</a>`
+              ? `<a class="card-action" href="${escapeHtml(material.href)}" target="_blank" rel="noopener noreferrer">${ui(material.action)} →</a>`
             : `<button class="card-action" type="button" data-material-placeholder="${escapeHtml(material.action)}" ${material.status === 'waiting' ? 'aria-disabled="true"' : ''}>${escapeHtml(material.action)}</button>`
           }
         </div>
       </article>
-    `).join('') : '<div class="empty-state">No project materials yet. Your team will add files, links, and references here.</div>';
+    `).join('') : '<div class="empty-state"><span data-i18n-key="No project materials yet. Your team will add files, links, and references here.">No project materials yet. Your team will add files, links, and references here.</span></div>';
   }
 
   function renderKnowledge() {
     const recommended = client.knowledge.slice(0, 2);
     dom.overviewKnowledgeList.innerHTML = recommended.map((article) => `
       <button class="mini-knowledge" type="button" data-article-open="${escapeHtml(article.id)}">
-        <span>${escapeHtml(article.category)} · ${escapeHtml(article.duration)}</span>
-        <strong>${escapeHtml(article.title)}</strong>
+        <span>${ui(article.category)} · ${ui(article.duration)}</span>
+        <strong>${ui(article.title)}</strong>
       </button>
     `).join('');
 
@@ -877,12 +844,12 @@
       .map((article, index) => `
         <article class="knowledge-card" tabindex="0" role="button" data-article-open="${escapeHtml(article.id)}">
           <div class="knowledge-card__meta">
-            <span>${escapeHtml(article.category)} · ${escapeHtml(article.duration)}</span>
+            <span>${ui(article.category)} · ${ui(article.duration)}</span>
             <span class="lesson-number">${String(index + 1).padStart(2, '0')}</span>
           </div>
-          <h2>${escapeHtml(article.title)}</h2>
-          <p>${escapeHtml(article.description)}</p>
-          <span class="card-action" aria-hidden="true">Open guide →</span>
+          <h2>${ui(article.title)}</h2>
+          <p>${ui(article.description)}</p>
+          <span class="card-action" aria-hidden="true"><span data-i18n-key="Open guide →">Open guide →</span></span>
         </article>
       `).join('');
   }
@@ -893,14 +860,14 @@
 
     dom.articleDialogContent.innerHTML = `
       <article class="article-content">
-        <span class="section-kicker">${escapeHtml(article.category)} · ${escapeHtml(article.duration)} read</span>
-        <h2>${escapeHtml(article.title)}</h2>
-        <p>${escapeHtml(article.intro)}</p>
+        <span class="section-kicker">${ui(article.category)} · ${ui(article.duration)} ${ui('read')}</span>
+        <h2>${ui(article.title)}</h2>
+        <p>${ui(article.intro)}</p>
         <div class="article-steps">
           ${article.steps.map((step, index) => `
             <section class="article-step">
-              <strong>${String(index + 1).padStart(2, '0')} · ${escapeHtml(step[0])}</strong>
-              <p>${escapeHtml(step[1])}</p>
+              <strong>${String(index + 1).padStart(2, '0')} · ${ui(step[0])}</strong>
+              <p>${ui(step[1])}</p>
             </section>
           `).join('')}
         </div>
@@ -914,16 +881,16 @@
     dom.formsGrid.innerHTML = client.forms.map((form) => `
       <article class="form-card ${form.featured ? 'is-featured' : ''}">
         <div class="form-card__top">
-          <span class="file-type">${form.status === 'active' ? 'FORM' : 'SOON'}</span>
-          <span class="form-status ${form.status === 'draft' ? 'is-draft' : ''}">${escapeHtml(form.status)}</span>
+          <span class="file-type">${ui(form.status === 'active' ? 'FORM' : 'SOON')}</span>
+          <span class="form-status ${form.status === 'draft' ? 'is-draft' : ''}">${ui(form.status)}</span>
         </div>
-        <h2>${escapeHtml(form.title)}</h2>
-        <p>${escapeHtml(form.description)}</p>
+        <h2>${starterText(form, 'title')}</h2>
+        <p>${starterText(form, 'description')}</p>
         <div class="card-footer">
-          <span>${escapeHtml(form.timing)}</span>
+          <span>${ui(form.timing)}</span>
           ${form.href
-            ? `<a class="card-action" href="${escapeHtml(form.href)}">Open form →</a>`
-            : '<span class="card-action" aria-disabled="true">Not available yet</span>'
+            ? `<a class="card-action" href="${escapeHtml(form.href)}">${ui('Open form →')}</a>`
+            : `<span class="card-action" aria-disabled="true">${ui('Not available yet')}</span>`
           }
         </div>
       </article>
@@ -943,20 +910,20 @@
               <strong>${escapeHtml(question.topic)}</strong>
               <span>${escapeHtml(date)}</span>
             </div>
-            <span class="request-status">${escapeHtml(status)}</span>
+            <span class="request-status">${ui(status)}</span>
             <p>${escapeHtml(question.message)}</p>
             ${replies.map((reply) => `
               <div class="request-reply">
-                <strong>Project team response</strong>
+                <strong>${ui('Project team response')}</strong>
                 <p>${escapeHtml(reply.body)}</p>
                 <span>${escapeHtml(formatDate(reply.created_at))}</span>
               </div>
             `).join('')}
-            ${question.remote ? '' : `<button class="delete-question" type="button" data-delete-question="${escapeHtml(question.id)}">Delete</button>`}
+            ${question.remote ? '' : `<button class="delete-question" type="button" data-delete-question="${escapeHtml(question.id)}">${ui('Delete')}</button>`}
           </article>
         `;
         }).join('')
-      : '<div class="empty-state">No project requests yet. Send a question when the team needs context or a decision.</div>';
+      : '<div class="empty-state"><span data-i18n-key="No project requests yet. Send a question when the team needs context or a decision.">No project requests yet. Send a question when the team needs context or a decision.</span></div>';
 
     document.querySelectorAll('[data-delete-question]').forEach((button) => {
       button.addEventListener('click', () => {
@@ -1009,7 +976,7 @@
   }
 
   function showToast(message) {
-    dom.toast.textContent = translate(message);
+    i18n.setText(dom.toast, message);
     dom.toast.classList.add('is-visible');
     clearTimeout(toastTimer);
     toastTimer = window.setTimeout(() => {
@@ -1084,6 +1051,8 @@
     translateDocument();
   }
 
+  i18n.subscribe(() => { if (client && starterRecords.has(client)) document.title = i18n.t(client.name) + ' — Platum'; if (dom.greeting) dom.greeting.textContent = getGreeting(); translateDocument(); });
+
   async function init() {
     translateDocument();
     const authContext = await (window.CLIENT_SPACE_AUTH_READY || Promise.resolve({ clientId: 'starter', user: null }));
@@ -1128,7 +1097,7 @@
     }
 
     if (authContext.isTestWorkspace) {
-      dom.sidebarAccessRole.textContent = 'Test access';
+      i18n.setText(dom.sidebarAccessRole, 'Test access');
     }
 
     const initialView = window.location.hash.replace('#', '');
