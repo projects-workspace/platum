@@ -18,4 +18,5 @@
 ## Checks and delivery
 
 - Existing local checks are node scripts/check-integrity.js and npm --prefix bot test; database checks and setup requirements are documented in README.md. Run only relevant, safe checks.
+- Completed, authorized Platum application changes include publication to the existing production target by default after required checks, followed by verification of the deployment and canonical URL. The user explicitly confirmed this standing live-delivery preference on 2026-10-16. New access, destructive actions, costs and scope changes retain their applicable approval boundaries.
 - Documentation or review work does not authorize application changes, production mutations, commits, pushes, or deployments.
