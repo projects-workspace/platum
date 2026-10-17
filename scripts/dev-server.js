@@ -6,6 +6,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const handler = require('../api/team');
 const fileHandler = require('../api/files');
+const communityHandler = require('../api/community');
 const root = path.resolve(__dirname, '..');
 const host = '127.0.0.1';
 const port = Number(process.env.PLATUM_DEV_PORT || 4180);
@@ -14,7 +15,7 @@ if (!['127.0.0.1','localhost'].includes(backend.hostname) || !process.env.PLATUM
   throw new Error('This server requires explicit local Supabase configuration. Remote projects are refused.');
 }
 const publicFiles = new Set(['index.html','client-space.html','client-space.css','client-space.js','client-space-auth.js','client-space.i18n.js',
-  'cabinet-data.js','agency-os.js','agency-os.css','workspace-app.js','workspace-app.css','workspace-data.js','workspace-calendar.js','workspace-calendar-domain.js','workspace-calendar.css','workspace-learning.js','workspace-learning.css','workspace-progress.js','workspace-progress.css','prohor-intake.html','prohor-intake.js','prohor-intake.css']);
+  'cabinet-data.js','agency-os.js','agency-os.css','workspace-app.js','workspace-app.css','workspace-data.js','workspace-network.js','workspace-calendar.js','workspace-calendar-domain.js','workspace-calendar.css','workspace-learning.js','workspace-learning.css','workspace-progress.js','workspace-progress.css','prohor-intake.html','prohor-intake.js','prohor-intake.css']);
 const server = http.createServer(async (req,res) => {
   const url = new URL(req.url, 'http://' + host + ':' + port);
   res.setHeader('Cache-Control','no-store');
@@ -22,6 +23,7 @@ const server = http.createServer(async (req,res) => {
   res.setHeader('Content-Security-Policy',"default-src 'self'; connect-src 'self' "+backend.origin+"; font-src 'self' https://fonts.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob:; frame-ancestors 'none'");
   if (url.pathname === '/api/team') return handler(req,res);
   if (url.pathname === '/api/files') return fileHandler(req,res);
+  if (url.pathname === '/api/community') return communityHandler(req,res);
   if (!['GET','HEAD'].includes(req.method)) { res.writeHead(405); return res.end(); }
   if (url.pathname === '/client-space.config.js') {
     res.setHeader('Content-Type','application/javascript');

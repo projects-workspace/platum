@@ -15,3 +15,6 @@ bot/bot.pid
 # "tmp/" contains temporary working files.
  client-space/
 tmp/
+
+# Private owner transcripts and derived review records; never commit.
+/Транскрипти/

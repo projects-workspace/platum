@@ -16,11 +16,11 @@
     inspiration: '<path d="M8 15a7 7 0 1 1 8 0v3H8ZM8 21h8M12 2V0"/>',
     reports: '<path d="M4 3h16v18H4ZM8 16v-4M12 16V8M16 16v-6"/>',
   };
-  const state = { workspaces: [], active: null, data: null, editor: null, capabilities: { canCreate: false }, view: 'home', detail: null, version: null, loading: false, generation: 0, controller: null };
+  const state = { workspaces: [], active: null, data: null, network: null, editor: null, capabilities: { canCreate: false }, view: 'home', detail: null, version: null, loading: false, generation: 0, controller: null };
   const inlineDrafts = new Map();
   let pendingSaves = 0;
   let initialized = false;
-  const draftKey = form => [state.active?.id,form.dataset.form,form.dataset.id,form.dataset.version,form.dataset.block].join(':');
+  const draftKey = form => [state.active?.id,form.dataset.community,form.dataset.form,form.dataset.id,form.dataset.version,form.dataset.block].join(':');
   const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const i18n = window.PLATUM_I18N;
   const uiText = (source, parameters = {}) => ({ __platumUiText: String(source), parameters });
@@ -68,6 +68,8 @@
     (state.data.workspace_files.filter(f => f.status === 'ready').map(f => check(f.name, 'file:' + f.id, (ids || []).includes(f.id))).join('') || '<p><span data-i18n-key="No uploaded files yet. Add them in Files.">No uploaded files yet. Add them in Files.</span></p>') + '</fieldset>';
   const featureContext = {state,api,escape,heading,button,field,select,check,formFoot,person,date,dateText,uiText,uiOptions,textNode,i18n,operator,user,badge,empty,paragraphs,link,external,edit,render,filesPicker,questionEditor};
   const features = [window.PLATUM_CALENDAR_UI(featureContext),window.PLATUM_LEARNING_UI(featureContext),window.PLATUM_PROGRESS_UI(featureContext)];
+  const networkFeature = window.PLATUM_NETWORK_UI?.(featureContext);
+  if(networkFeature)features.push(networkFeature);
 
   function notice(message, error = false) {
     const node = document.getElementById('ws-notice');
@@ -89,9 +91,10 @@
     i18n.apply(root);
   }
   function navigation() {
-    root.querySelector('[data-action="export"]').hidden = !state.active;
+    root.querySelector('[data-action="export"]').hidden = Boolean(!state.active || networkFeature?.isGlobalView(state.view));
+    document.querySelector('.ws-workspace-picker').hidden=Boolean(networkFeature?.isGlobalView(state.view));
     document.getElementById('ws-workspace-select').innerHTML = state.workspaces.map(w => '<option value="' + w.id + '"' + (w.id === state.active?.id ? ' selected' : '') + '>' + escape(w.name) + '</option>').join('') || '<option data-i18n-key="No workspace yet">No workspace yet</option>';
-    const modules = state.active?.settings?.modules || Object.keys(labels);
+    const modules = state.active ? state.active.settings?.modules || Object.keys(labels) : [];
     let items = modules.filter(k => labels[k]).map(k => '<a href="#' + k + '" class="' + (state.view === k || state.view === 'material' && k === 'materials' || state.view === 'request' && k === 'work' || state.view === 'form' && k === 'forms' || ['event','availability'].includes(state.view) && k === 'calendar' || state.view==='lesson' && k==='learning' || state.view==='inspiration-item' && k==='inspiration' || ['report','milestone'].includes(state.view)&&k==='reports' ? 'is-current' : '') + '">' +
       '<svg viewBox="0 0 24 24" aria-hidden="true">' + icons[k] + '</svg><span>' + i18n.mark(labels[k]) + '</span></a>').join('');
     if (state.workspaces.some(w => ['owner','admin','team'].includes(w.role))) items += '<div class="ws-nav-divider"></div><a href="#team"' + (state.view === 'team' ? ' class="is-current"' : '') + ' data-i18n-key="Team inbox">Team inbox</a>';
@@ -99,10 +102,13 @@
     if (operator()) items += '<a href="#templates"' + (state.view === 'templates' ? ' class="is-current"' : '') + ' data-i18n-key="Templates">Templates</a>';
     if (manager()) items += '<a href="#members"' + (state.view === 'members' ? ' class="is-current"' : '') + ' data-i18n-key="People & access">People & access</a>';
     if (state.capabilities.canCreate) items += '<a href="#new-workspace"><span data-i18n-key="Create workspace">Create workspace</span></a>';
+    if(networkFeature)items='<a href="#communities"'+(state.view.startsWith('communit')?' class="is-current"':'')+' data-i18n-key="Communities">Communities</a>'+
+      (operator()?'<a href="#contacts"'+(['contacts','contact'].includes(state.view)?' class="is-current"':'')+' data-i18n-key="Contact network">Contact network</a>':'')+(modules.length?'<div class="ws-nav-divider"></div>':'')+items;
     document.getElementById('ws-nav').innerHTML = items;
-    document.getElementById('ws-location').textContent = state.active ? state.active.name + ' / ' + i18n.t(operator() ? 'Team workspace' : 'Shared workspace') : i18n.t('Your workspaces');
+    const networkLocation=networkFeature?.location();
+    document.getElementById('ws-location').textContent = networkLocation || (state.active ? state.active.name + ' / ' + i18n.t(operator() ? 'Team workspace' : 'Shared workspace') : i18n.t('Your workspaces'));
     root.dataset.accent = ['forest','slate','clay'].includes(state.active?.settings?.accent) ? state.active.settings.accent : 'forest';
-    document.title = state.active ? state.active.name + ' — Platum' : 'Platum';
+    document.title = networkLocation ? networkLocation+' — Platum' : state.active ? state.active.name + ' — Platum' : 'Platum';
     i18n.apply(root);
   }
   function tasksList(tasks) {
@@ -338,9 +344,9 @@
     if(state.loading){content.innerHTML='<div class="ws-loading" role="status"><span data-i18n-key="Opening your workspace…">Opening your workspace…</span></div>';i18n.apply(content);return;}
     if(state.editor){content.innerHTML=editorView();i18n.apply(content);content.querySelector('h1')?.focus({preventScroll:true});return;}
     if(state.view==='new-workspace'&&state.capabilities.canCreate){state.editor={type:'workspace'};content.innerHTML=editorView();i18n.apply(content);return;}
-    if(!state.active||!state.data){content.innerHTML=heading(uiText('Your workspaces'),uiText('Your account is signed in.'))+
+    if((!state.active||!state.data)&&!networkFeature?.isGlobalView(state.view)){content.innerHTML=heading(uiText('Your workspaces'),uiText('Your account is signed in.'))+
       empty(uiText('No workspace access yet'),state.capabilities.canCreate?'Create your first shared workspace to begin.':'Ask your team to invite this email. An invitation may have expired or been revoked.')+
-      (state.capabilities.canCreate?button('new-workspace',uiText('Create workspace'),'','ws-button ws-primary'):'')+button('refresh',uiText('Check again'));i18n.apply(content);return;}
+      (state.capabilities.canCreate?button('new-workspace',uiText('Create workspace'),'','ws-button ws-primary'):'')+button('refresh',uiText('Check again'))+(networkFeature?link('communities',uiText('Open communities')):'');i18n.apply(content);return;}
     if(state.view==='settings'&&operator()){state.editor={type:'settings'};content.innerHTML=editorView();i18n.apply(content);return;}
     if(state.view==='team'){teamView();return;}
     const views={home:homeView,work:workView,request:requestView,context:contextView,material:materialView,forms:formsView,form:formView,files:filesView,updates:updatesView,members:membersView,
@@ -386,9 +392,10 @@
       state.active=state.workspaces.find(w=>w.id===preferred)||state.workspaces[0]||null;
       if(state.active){const url=new URL(location.href);url.searchParams.set('workspace',state.active.id);history.replaceState({},'',url);}
       if(preferred&&!state.workspaces.some(w=>w.id===preferred))notice('The selected workspace is no longer available to your account.',true);
-      const data=state.active?await api.bundle(state.active.id,state.controller.signal):null;
+      const [data,network]=await Promise.all([state.active?api.bundle(state.active.id,state.controller.signal):null,api.network?api.network(state.controller.signal):null]);
       if(generation!==state.generation)return;
       state.data=data;
+      state.network=network;
       state.loading=false;render();
     }catch(error){
       if(error.name==='AbortError'||generation!==state.generation)return;
@@ -414,7 +421,7 @@
     const value=k=>String(data.get(k)||'').trim();
     const id=form.dataset.id||null,revision=Number(form.dataset.revision)||0;
     const fileIds=[...data.keys()].filter(k=>k.startsWith('file:')).map(k=>k.slice(5));
-    let action,payload,result;
+    let action,payload,result,featureCommand;
     form._busy=true;pendingSaves++;form.setAttribute('aria-busy','true');const controls=[...form.querySelectorAll('button[type="submit"]')];controls.forEach(b=>b.disabled=true);
     try {
       if(type==='workspace') {payload={name:value('name')};result=await api.team('create_workspace',null,payload,operationFor(form,payload));state.capabilities.canCreate=true;state.editor=null;state.editorDirty=false;state.view='home';history.replaceState({},'',location.pathname+location.search+'#home');await refresh(result.workspace.id);notice('Workspace created. Add context and invite your client.');return;}
@@ -443,9 +450,11 @@
       if(type==='decision'){action='decision.record';payload={title:value('title'),context:value('context'),decision:value('decision')};}
       if(type==='settings'){action='workspace.save';payload={revision,...Object.fromEntries(['name','welcome','description','focus','phase','objective','scope','roles','rhythm','boundaries','next_step','accent','timezone'].map(k=>[k,value(k)])),
         modules:[...form.querySelectorAll('[data-module]')].filter(li=>li.dataset.module==='home'||li.querySelector('input').checked).map(li=>li.dataset.module)};}
-      for(const feature of features){const command=feature.form?.(form,data,value,submitter);if(command){action=command.action;payload=command.payload;break;}}
+      for(const feature of features){const command=feature.form?.(form,data,value,submitter);if(command){action=command.action;payload=command.payload;featureCommand=command;break;}}
       if(!action)throw new Error('This form is not available.');
-      result=await api.mutate(action,state.active.id,payload,operationFor(form,payload));
+      result=featureCommand?.network
+        ? await api[featureCommand.service?'community':'networkMutate'](action,featureCommand.scope,payload,operationFor(form,payload))
+        : await api.mutate(action,state.active.id,payload,operationFor(form,payload));
       inlineDrafts.delete(draftKey(form));
       state.editorDirty=false;state.editor=null;
       if(type==='material'){state.view='material';state.detail=result.material.id;state.version=result.version.id;history.replaceState({},'',location.pathname+location.search+'#material/'+state.detail+'/'+state.version);}
@@ -454,7 +463,7 @@
       if(type==='settings'){state.view='context';history.replaceState({},'',location.pathname+location.search+'#context');}
       for(const feature of features)feature.afterSave?.(type,result);
       await refresh();
-      notice(type==='material'?'Internal draft saved. Publish this version when it is ready.':type==='submission'&&payload.status==='draft'?'Your draft is saved. It has not been sent to the team.':'Saved.');
+      notice(result?.delivery ? (result.delivery==='sent'?'Invitation sent.':uiText('Delivery {status}. Check the invitation before trying again.',{status:{__platumUi:result.delivery}})) : type==='material'?'Internal draft saved. Publish this version when it is ready.':type==='submission'&&payload.status==='draft'?'Your draft is saved. It has not been sent to the team.':'Saved.',Boolean(result?.delivery&&result.delivery!=='sent'));
     }catch(error){formError(form,error);}
     finally{pendingSaves--;form._busy=false;form.removeAttribute('aria-busy');controls.forEach(b=>b.disabled=false);}
   }
@@ -480,7 +489,20 @@
     if(action==='module-up'||action==='module-down'){const li=control.closest('li'),neighbor=action==='module-up'?li.previousElementSibling:li.nextElementSibling;if(neighbor){if(action==='module-up')li.parentElement.insertBefore(li,neighbor);else li.parentElement.insertBefore(neighbor,li);state.editorDirty=true;}return;}
     if(action==='reply-comment'){const form=control.closest('details').querySelector('form');form.elements.parent_id.value=id;form.elements.body.focus();return;}
     if(action==='copy-draft'){try{await navigator.clipboard.writeText(JSON.stringify([...new FormData(control.closest('form')).entries()],null,2));notice('Draft copied.');}catch{notice('Select and copy your draft before loading the latest version.',true);}return;}
-    if(action==='reload-editor'){if(window.confirm(i18n.t('Replace this unsaved draft with the latest saved version?'))){state.editorDirty=false;const old=state.editor;await refresh();if(old?.item?.id){const maps={task:'tasks',triage:'requests',form:'forms',material:'materials',...Object.assign({},...features.map(f=>f.editorTable||{}))};const latest=state.data[maps[old.type]]?.find(x=>x.id===old.item.id);if(latest)edit(old.type,latest,old.type==='material'?{version:state.data.material_versions.find(v=>v.id===(latest.draft_version_id||latest.published_version_id))}:{});}else if(old?.type==='settings')edit('settings');}return;}
+    if(action==='reload-editor'){
+      if(window.confirm(i18n.t('Replace this unsaved draft with the latest saved version?'))){
+        state.editorDirty=false;const old=state.editor;await refresh();
+        const special=features.map(f=>f.reloadEditor?.(old)).find(Boolean);
+        if(special)edit(old.type,special);
+        else if(old?.item?.id){
+          const maps={task:'tasks',triage:'requests',form:'forms',material:'materials',...Object.assign({},...features.map(f=>f.editorTable||{}))};
+          const latest=(state.data?.[maps[old.type]]||state.network?.[maps[old.type]]||[]).find(x=>x.id===old.item.id);
+          if(latest)edit(old.type,latest,old.type==='material'?{version:state.data.material_versions.find(v=>v.id===(latest.draft_version_id||latest.published_version_id))}:{});
+          else notice('This record is no longer available.',true);
+        }else if(old?.type==='settings')edit('settings');
+      }
+      return;
+    }
     if(action==='refresh'){if(discard())await refresh();return;}
     if(control._busy)return;control._busy=true;control.setAttribute('aria-busy','true');control.disabled=true;
     const writing=!['open-inbox-item','download','export'].includes(action);
@@ -489,8 +511,8 @@
       if(action==='open-inbox-item'){if(!discard())return;state.view=control.dataset.view;state.detail=id;state.version=null;history.replaceState({},'',location.pathname+location.search+'#'+state.view+'/'+id);await refresh(control.dataset.workspace);return;}
       if(action==='download'){await api.download(d.workspace_files.find(f=>f.id===id));return;}
       if(action==='export'){if(!state.active){notice('Open a workspace before downloading its shared history.',true);return;}await api.exportWorkspace(state.active.id,control.dataset.format||'markdown');notice('Shared history downloaded. Files can be downloaded separately.');return;}
-      let command,payload;
-      for(const feature of features){const next=feature.command?.(action,control);if(next){command=next.action;payload=next.payload;break;}}
+      let command,payload,featureCommand;
+      for(const feature of features){const next=feature.command?.(action,control);if(next){command=next.action;payload=next.payload;featureCommand=next;break;}}
       if(action==='complete-task'){const t=d.tasks.find(t=>t.id===id);command='task.complete';payload={id,revision:t.revision,status:t.status==='completed'?'open':'completed'};}
       if(action==='publish-material'){const m=d.materials.find(m=>m.id===id);command='material.publish';payload={id,revision:m.revision,version_id:control.dataset.version};}
       if(action==='archive-material'){if(!window.confirm(i18n.t('Archive this material and remove client access to its versions?')))return;const m=d.materials.find(m=>m.id===id);command='material.archive';payload={id,revision:m.revision};state.view='materials';history.replaceState({},'',location.pathname+location.search+'#materials');}
@@ -503,7 +525,7 @@
         const response=await api.team(action==='revoke-member'?'revoke_member':action==='revoke-invite'?'revoke_invite':'resend_invite',state.active.id,{id},control._operation||=uuid());
         await refresh();notice(action==='resend-invite'?(response.delivery==='sent'?'Invitation sent.':uiText('Delivery {status}. Check the invitation before trying again.',{status:{__platumUi:response.delivery}})):'Access updated.',action==='resend-invite'&&response.delivery!=='sent');return;
       }
-      if(command){const result=await api.mutate(command,state.active.id,payload,control._operation||=uuid());for(const feature of features)feature.afterCommand?.(action,result);await refresh();notice('Saved.');}
+      if(command){const result=featureCommand?.network?await api[featureCommand.service?'community':'networkMutate'](command,featureCommand.scope,payload,control._operation||=uuid()):await api.mutate(command,state.active.id,payload,control._operation||=uuid());for(const feature of features)feature.afterCommand?.(action,result);await refresh();notice(result?.delivery==='sent'?'Invitation sent.':result?.delivery?uiText('Delivery {status}. Check the invitation before trying again.',{status:{__platumUi:result.delivery}}):'Saved.',Boolean(result?.delivery&&result.delivery!=='sent'));}
     }catch(error){notice(error.message,true);}
     finally{if(writing)pendingSaves--;control._busy=false;control.removeAttribute('aria-busy');control.disabled=false;}
   }
@@ -513,7 +535,7 @@
     const requestedWorkspace=new URLSearchParams(location.search).get('workspace');
     root.hidden=false;document.body.classList.add('workspace-mode');shell();readRoute();navigation();
     root.addEventListener('submit',submit);root.addEventListener('click',click);
-    root.addEventListener('input',event=>{const form=event.target.closest('form');if(form){state.editorDirty=true;if(['reply','comment','submission','calendar-comment','calendar-response','learning-answer','learning-feedback','inspiration-comment'].includes(form.dataset.form))inlineDrafts.set(draftKey(form),[...new FormData(form).entries()]);}});
+    root.addEventListener('input',event=>{for(const feature of features)feature.input?.(event.target);const form=event.target.closest('form');if(form){state.editorDirty=true;if(['reply','comment','submission','calendar-comment','calendar-response','learning-answer','learning-feedback','inspiration-comment','network-comment','network-contact-note'].includes(form.dataset.form))inlineDrafts.set(draftKey(form),[...new FormData(form).entries()]);}});
     root.addEventListener('change',async event=>{
       if(event.target.id==='ws-workspace-select'){if(!discard()){event.target.value=state.active?.id;return;}state.view='home';state.detail=null;state.version=null;const url=new URL(location.href);url.searchParams.set('workspace',event.target.value);url.hash='home';history.replaceState({},'',url);await refresh(event.target.value);}
       if(event.target.matches('[data-version-select]'))location.hash='material/'+state.detail+'/'+event.target.value;
@@ -529,6 +551,6 @@
     await refresh(requestedWorkspace);
     initialized=true;
   }
-  i18n.subscribe(() => { if (initialized) { i18n.apply(root); const locationNode = document.getElementById('ws-location'); if (locationNode) locationNode.textContent = state.active ? state.active.name + ' / ' + i18n.t(operator() ? 'Team workspace' : 'Shared workspace') : i18n.t('Your workspaces'); } });
+  i18n.subscribe(() => { if (initialized) { i18n.apply(root); const locationNode = document.getElementById('ws-location'); if (locationNode) locationNode.textContent = networkFeature?.location() || (state.active ? state.active.name + ' / ' + i18n.t(operator() ? 'Team workspace' : 'Shared workspace') : i18n.t('Your workspaces')); } });
   init();
 })();

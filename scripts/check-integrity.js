@@ -43,7 +43,7 @@ function isDirectory(relativePath) {
 function walk(dir, out = []) {
   if (!isDirectory(dir)) return out;
   for (const entry of fs.readdirSync(path.join(ROOT, dir))) {
-    if (entry === '.git' || entry === 'node_modules' || entry === 'tmp' || entry === ' client-space') continue;
+    if (entry === '.git' || entry === 'node_modules' || entry === 'tmp' || entry === ' client-space' || entry === 'Транскрипти') continue;
     const relative = path.posix.join(dir, entry);
     if (isDirectory(relative)) walk(relative, out);
     else out.push(relative);
@@ -71,6 +71,9 @@ const requiredFiles = [
   'workspace-learning.css',
   'workspace-progress.js',
   'workspace-progress.css',
+  'workspace-network.js',
+  'api/community.js',
+  'supabase/migrations/20261017230000_contacts_and_community.sql',
   'api/team.js',
   'api/files.js',
   'supabase/migrations/20261012163018_collaboration_workspace.sql',
@@ -177,7 +180,7 @@ if (exists('supabase/config.toml')) {
 
 // ── 6. Protected private paths ──
 console.log('\n== 6. Protected private paths ==');
-const protectedPaths = [' client-space', 'tmp'];
+const protectedPaths = [' client-space', 'tmp', 'Транскрипти'];
 const ignoreStatus = protectedPaths.map((protectedPath) => {
   // Probe a path *inside* the protected directory: git check-ignore does not
   // match trailing-slash patterns against a directory path that does not exist

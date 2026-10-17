@@ -6,6 +6,7 @@ on:
     branches:
       - main
       - codex/client-space-prototype
+      - codex/community-contacts
 
 permissions:
   contents: read
@@ -28,7 +29,12 @@ jobs:
         run: node scripts/check-integrity.js
 
       - name: Verify workspace management authorization
-        run: node --test tests/team-api.test.js tests/files-api.test.js tests/workspace-routing.test.js tests/calendar-domain.test.js tests/localization.test.js
+        run: node --test tests/team-api.test.js tests/community-api.test.js tests/files-api.test.js tests/workspace-routing.test.js tests/calendar-domain.test.js tests/localization.test.js
+
+      - name: Verify network migration and row isolation in local PostgreSQL
+        run: |
+          npm install --prefix "${{ runner.temp }}/platum-sql" --no-audit --no-fund @electric-sql/pglite@0.5.10
+          PLATUM_PGLITE_MODULE="${{ runner.temp }}/platum-sql/node_modules/@electric-sql/pglite" node tests/network-database.cjs
 
       - name: Install Telegram worker dependencies
         run: npm ci --prefix bot

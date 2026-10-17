@@ -13,6 +13,7 @@ function firstWorkspaceRoute(canCreate, loading = false) {
   const content = { innerHTML: '' };
   vm.runInNewContext(renderSource + '\nrender();', {
     i18n: { apply() {}, t: String }, uiText: String,
+    networkFeature: null,
     state, document: { getElementById: () => content }, navigation() {},
     editorView: () => 'workspace-editor', heading: () => '',
     empty: () => 'no-access', button: () => '',
@@ -47,7 +48,8 @@ for (const hasWorkspace of [false, true]) test('shared-history export visibility
     i18n: { apply() {}, t: String, mark: String }, uiText: String,
     state: { active, workspaces: active ? [active] : [], view: 'home', capabilities: { canCreate: false } },
     root: { dataset: {}, querySelector: () => exportControl },
-    document: { getElementById: id => nodes[id] ||= {}, title: '' },
+    document: { getElementById: id => nodes[id] ||= {}, querySelector: () => ({}), title: '' },
+    networkFeature: null,
     labels: {}, icons: {}, escape: String, operator: () => false, manager: () => false,
   });
   assert.equal(exportControl.hidden, !hasWorkspace);
