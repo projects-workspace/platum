@@ -352,8 +352,10 @@
     }
 
     if (!hasAuthConfig) {
-      dom.previewLogin.hidden = false;
-      showLogin('Secure login is being activated. You can continue to the prototype for now.');
+      dom.previewLogin.hidden = !publicTestWorkspaceEnabled;
+      showLogin(publicTestWorkspaceEnabled
+        ? 'Secure login is being activated. You can continue to the prototype for now.'
+        : 'Secure sign-in is not configured. Contact your Platum administrator.');
       return;
     }
 
@@ -451,6 +453,7 @@
   });
 
   dom.previewLogin.addEventListener('click', () => {
+    if (!publicTestWorkspaceEnabled) return;
     testWorkspaceActive = true;
     setPublicTestWorkspace(true);
     clearSession();

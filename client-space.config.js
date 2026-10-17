@@ -5,7 +5,7 @@ window.CLIENT_SPACE_CONFIG = Object.freeze({
   supabasePublishableKey: 'sb_publishable_8-a0MZscMktjlzVckFE_sg_cflra1Qe',
   brandName: 'Platum',
   brandMark: 'P',
-  enablePublicTestWorkspace: true,
+  enablePublicTestWorkspace: false,
   telegramLoginUrl: '',
   supportUrl: '',
 });

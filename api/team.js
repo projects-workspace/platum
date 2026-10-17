@@ -6,6 +6,7 @@ const ACTIONS = new Set(['create_workspace', 'invite', 'resend_invite', 'revoke_
 const safeErrors = {
   FORBIDDEN: 'You do not have permission to manage this workspace.',
   FORBIDDEN_ROLE: 'Only a workspace owner can manage administrators.',
+  PLATFORM_ROLE_MEMBER: 'Platform owners and administrators cannot be removed from a workspace here.',
   LAST_OWNER: 'The last workspace owner cannot be removed.',
   INVITATION_RATE_LIMIT: 'Please wait before sending another invitation.',
   INVITATION_UNAVAILABLE: 'This invitation is no longer available.',
@@ -65,9 +66,12 @@ function createHandler(env = process.env, fetcher = globalThis.fetch) {
       if (!UUID.test(user.id || '') || !user.email_confirmed_at) throw failure(401, 'Use a confirmed account to continue.');
       const memberships = await call('/rest/v1/workspace_members?select=workspace_id,role&user_id=eq.' + user.id, { user: true });
       if (!Array.isArray(memberships)) throw failure(502, 'Workspace access could not be verified.');
+      const platformRoles = await call('/rest/v1/platform_roles?select=role&user_id=eq.' + user.id);
+      if (!Array.isArray(platformRoles)) throw failure(502, 'Platform access could not be verified.');
+      const platformRole = ['founder', 'platform_admin'].includes(platformRoles[0]?.role) ? platformRoles[0].role : null;
       const bootstrap = String(env.PLATUM_BOOTSTRAP_USER_IDS || '').split(',').map(value => value.trim()).filter(value => UUID.test(value));
-      const canCreate = bootstrap.includes(user.id) || memberships.some(m => ['owner', 'admin'].includes(m.role));
-      if (req.method === 'GET') return send(200, { canCreate, supabaseUrl: base });
+      const canCreate = Boolean(platformRole) || bootstrap.includes(user.id) || memberships.some(m => ['owner', 'admin'].includes(m.role));
+      if (req.method === 'GET') return send(200, { canCreate, platformRole, supabaseUrl: base });
       if (!String(req.headers['content-type'] || '').startsWith('application/json')) throw failure(415, 'Send a JSON request.');
       let input = req.body;
       if (input === undefined) {
@@ -91,10 +95,17 @@ function createHandler(env = process.env, fetcher = globalThis.fetch) {
         if (typeof payload.name !== 'string' || !payload.name.trim() || payload.name.length > 120) throw failure(400, 'Enter a workspace name of up to 120 characters.');
       } else {
         const membership = memberships.find(m => m.workspace_id === workspace);
-        if (!UUID.test(workspace || '') || !membership || !['owner', 'admin'].includes(membership.role)) throw failure(403, safeErrors.FORBIDDEN);
+        const effectiveRole = membership?.role || (platformRole === 'founder' ? 'owner' : platformRole === 'platform_admin' ? 'admin' : null);
+        if (!UUID.test(workspace || '') || !['owner', 'admin'].includes(effectiveRole)) throw failure(403, safeErrors.FORBIDDEN);
+        if (action === 'revoke_member') {
+          if (!UUID.test(payload.id || '')) throw failure(400, 'Select a valid person or invitation.');
+          const targetPlatformRoles = await call('/rest/v1/platform_roles?select=role&user_id=eq.' + payload.id);
+          if (!Array.isArray(targetPlatformRoles)) throw failure(502, 'Platform access could not be verified.');
+          if (targetPlatformRoles.length) throw failure(403, safeErrors.PLATFORM_ROLE_MEMBER);
+        }
         if (action === 'invite') {
           if (typeof payload.email !== 'string' || payload.email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payload.email.trim())) throw failure(400, safeErrors.INVALID_EMAIL);
-          if (!['client', 'team', 'admin'].includes(payload.role) || payload.role === 'admin' && membership.role !== 'owner') throw failure(403, safeErrors.FORBIDDEN_ROLE);
+          if (!['client', 'team', 'admin'].includes(payload.role) || payload.role === 'admin' && effectiveRole !== 'owner') throw failure(403, safeErrors.FORBIDDEN_ROLE);
         } else if (!UUID.test(payload.id || '')) throw failure(400, 'Select a valid person or invitation.');
       }
       const command = (name, data, id = randomUUID()) => call('/rest/v1/rpc/platum_service_command', {

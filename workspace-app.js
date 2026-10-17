@@ -241,9 +241,9 @@
   }
   function membersView() {
     if(!manager())return empty(uiText('Team management'),uiText('Only workspace owners and administrators can manage access.'));
-    return heading(uiText('People & access'),uiText('Access applies to this workspace only.'),button('invite-person',uiText('Invite someone'),'','ws-button ws-primary'))+
-      '<section><h2><span data-i18n-key="Members">Members</span></h2>'+state.data.people.map(p=>'<article class="ws-work-row"><div><strong>'+escape(p.name)+'</strong><p>'+escape(p.email||'')+'</p>'+badge(uiText(human(p.role)))+'</div>'+
-        ((state.active.role==='owner'||['client','team'].includes(p.role))?button('revoke-member',uiText('Remove access'),'data-id="'+p.user_id+'"','ws-button ws-quiet'):'')+'</article>').join('')+'</section>'+
+    return heading(uiText('People & access'),uiText('Workspace roles apply here. Platform founders have access across all workspaces.'),button('invite-person',uiText('Invite someone'),'','ws-button ws-primary'))+
+      '<section><h2><span data-i18n-key="Members">Members</span></h2>'+state.data.people.map(p=>'<article class="ws-work-row"><div><strong>'+escape(p.name)+'</strong><p>'+escape(p.email||'')+'</p>'+badge(uiText(human(p.role)))+(p.platform_role?badge(uiText(p.platform_role==='founder'?'Platform founder':'Platform administrator')):'')+'</div>'+
+        (!p.platform_role&&(state.active.role==='owner'||['client','team'].includes(p.role))?button('revoke-member',uiText('Remove access'),'data-id="'+p.user_id+'"','ws-button ws-quiet'):'')+'</article>').join('')+'</section>'+
       '<section class="ws-section"><h2><span data-i18n-key="Invitations">Invitations</span></h2>'+state.data.workspace_invitations.map(i=>'<article class="ws-work-row"><div><strong>'+escape(i.email)+'</strong><div class="ws-meta">'+badge(uiText(i.status==='pending'&&new Date(i.expires_at)<new Date()?'Expired':human(i.status)))+'<span>'+i18n.mark(human(i.role))+'</span><span><span data-i18n-key="Delivery:">Delivery:</span> '+i18n.mark(human(i.mail_status))+'</span></div></div>'+
         (i.status==='pending'?'<div class="ws-row-actions">'+button('resend-invite',uiText('Resend'),'data-id="'+i.id+'"')+button('revoke-invite',uiText('Revoke'),'data-id="'+i.id+'"','ws-button ws-quiet')+'</div>':'')+'</article>').join('')+'</section>';
   }

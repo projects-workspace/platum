@@ -11,9 +11,11 @@ The static app uses client-space.config.js for its browser-safe Supabase URL and
 | PLATUM_SUPABASE_URL | The same verified Platum backend used by the browser |
 | PLATUM_SUPABASE_SERVICE_ROLE_KEY | Server-only Supabase secret key for Auth administration, scoped workspace-management commands and authorized file delivery; the variable name is retained for compatibility |
 | PLATUM_APP_URL | Exact application origin and fixed invitation callback destination |
-| PLATUM_BOOTSTRAP_USER_IDS | Explicit confirmed Auth user UUIDs permitted to create the first workspace |
+| PLATUM_BOOTSTRAP_USER_IDS | Optional confirmed Auth UUID allowlist for a first workspace before a platform role is provisioned |
 
-Existing workspace owners and administrators may create additional workspaces. A bootstrap identity does not gain access to other workspaces. After establishing the first owner, remove the bootstrap allowance if it is no longer needed. Do not put these identifiers or the server key into browser code.
+Global platform roles live in `public.platform_roles`, keyed by the stable Supabase Auth user ID. The migration provisions the three current founders from their existing email addresses. Founders can create and manage across workspaces; platform administrators can manage across workspaces without granting other administrators. Every other user's role remains scoped to explicit `workspace_members` entries. Email is used to locate an invitee, not as a browser-supplied authorization claim. Do not put role records, bootstrap identifiers or the server key into browser code.
+
+The bootstrap allowlist is only for the first workspace before a platform role is provisioned; it does not grant access to existing workspaces. Once platform roles are configured, remove the bootstrap allowance. Project membership changes must go through the invitation and owner-protection service commands rather than direct table writes.
 
 The management API authenticates the bearer token with Auth, checks workspace membership, and uses service-only transactional commands. Team members can work on assigned client records but cannot invite people or manage memberships. Only owners can grant or revoke administrator access; the last owner cannot be removed.
 

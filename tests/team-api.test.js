@@ -7,7 +7,7 @@ const workspace = '11111111-1111-4111-8111-111111111111';
 const invitation = { id: '22222222-2222-4222-8222-222222222222', workspace_id: workspace, email: 'client@platum.test', role: 'client', mail_status: 'pending' };
 const operation = '33333333-3333-4333-8333-333333333333';
 const env = { PLATUM_SUPABASE_URL: 'https://platum.test', PLATUM_SUPABASE_SERVICE_ROLE_KEY: 'test-server-key', PLATUM_APP_URL: 'https://portal.test' };
-function setup({ role = 'owner', bootstrap = false, mail = 'new', rpcError, memberships, confirmed = true, key = env.PLATUM_SUPABASE_SERVICE_ROLE_KEY } = {}) {
+function setup({ role = 'owner', platformRole = null, bootstrap = false, mail = 'new', rpcError, memberships, confirmed = true, key = env.PLATUM_SUPABASE_SERVICE_ROLE_KEY } = {}) {
   const calls = [];
   const fetcher = async (url, options) => {
     const body = options.body ? JSON.parse(options.body) : null;
@@ -15,6 +15,7 @@ function setup({ role = 'owner', bootstrap = false, mail = 'new', rpcError, memb
     let status = 200, data = {};
     if (url.endsWith('/auth/v1/user')) data = { id: actor, email_confirmed_at: confirmed ? '2026-10-12T00:00:00Z' : null };
     else if (url.includes('/workspace_members?')) data = memberships || (role ? [{ workspace_id: workspace, role }] : []);
+    else if (url.includes('/platform_roles?')) data = platformRole ? [{ role: platformRole }] : [];
     else if (url.includes('/rpc/platum_service_command')) {
       if (rpcError) { status = 400; data = { message: rpcError }; }
       else if (body.action === 'workspace.create') data = { id: workspace, name: body.payload.name };
@@ -54,6 +55,26 @@ test('the explicit bootstrap identity can create its first workspace', async () 
   assert.equal((await s.request(input('create_workspace',{name:'Client'},null))).status,201);
   const command=s.calls.find(c=>c.url.includes('/rpc/')).body;
   assert.equal(command.actor_id,actor);assert.equal(command.operation_id,operation);
+});
+test('a global founder can create a workspace without any workspace membership', async () => {
+  const s=setup({role:null,platformRole:'founder'});
+  assert.equal((await s.request(input('create_workspace',{name:'Founder workspace'},null))).status,201);
+  assert.equal((await s.request(undefined,{method:'GET'})).body.platformRole,'founder');
+});
+test('global founders can manage an assigned workspace without a local membership row', async () => {
+  const s=setup({role:null,platformRole:'founder'});
+  assert.equal((await s.request(input('invite',{email:'client@platum.test',role:'client'}))).body.delivery,'sent');
+  assert.equal(s.calls.some(c=>c.url.includes('/rpc/platum_service_command')),true);
+});
+test('a global administrator cannot grant workspace administrator access', async () => {
+  const s=setup({role:null,platformRole:'platform_admin'});
+  assert.equal((await s.request(input('invite',{email:'client@platum.test',role:'admin'}))).status,403);
+  assert.equal(s.calls.some(c=>c.url.includes('/rpc/platum_service_command')),false);
+});
+test('global role holders cannot be removed as ordinary workspace members', async () => {
+  const s=setup({platformRole:'founder'});
+  assert.equal((await s.request(input('revoke_member',{id:actor}))).status,403);
+  assert.equal(s.calls.some(c=>c.url.includes('/rpc/platum_service_command')),false);
 });
 test('capabilities expose neither administrative key nor another user identity', async () => {
   const s=setup();const r=await s.request(undefined,{method:'GET'});

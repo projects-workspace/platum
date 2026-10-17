@@ -92,9 +92,12 @@
   }
   async function access(signal) {
     await rpc('platum_accept_invitations', {}, signal);
+    if (window.CLIENT_SPACE_AUTH_CONTEXT.platformRole === undefined) await team();
     const memberships = await rows('workspace_members', { user_id: 'eq.' + window.CLIENT_SPACE_AUTH_CONTEXT.user.id }, signal);
     const workspaces = await rows('workspaces', {}, signal);
-    return workspaces.map(workspace => ({ ...workspace, role: memberships.find(m => m.workspace_id === workspace.id)?.role })).filter(w => w.role);
+    const platformRole = window.CLIENT_SPACE_AUTH_CONTEXT.platformRole;
+    const globalRole = platformRole === 'founder' ? 'owner' : platformRole === 'platform_admin' ? 'admin' : null;
+    return workspaces.map(workspace => ({ ...workspace, role: memberships.find(m => m.workspace_id === workspace.id)?.role || globalRole })).filter(w => w.role);
   }
   async function bundle(workspace, signal) {
     const filter = { workspace_id: 'eq.' + workspace };
@@ -123,7 +126,10 @@
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(data.error || 'Workspace management is not available. Contact your administrator.');
     if (!action && data.supabaseUrl !== base) throw new Error('The browser and server point to different workspaces. Contact your administrator.');
-    if (!action) serverValidated = true;
+    if (!action) {
+      serverValidated = true;
+      window.CLIENT_SPACE_AUTH_CONTEXT.platformRole = data.platformRole || null;
+    }
     return data;
   }
   function mutate(action, workspace, payload, operation = crypto.randomUUID()) {

@@ -83,7 +83,9 @@ const requiredFiles = [
   'supabase/config.toml',
   'supabase/migrations/20260812095253_cabinet_workspace_state.sql',
   'supabase/migrations/20260821122450_platum_workspace_mvp.sql',
+  'supabase/migrations/20261017110000_platform_roles.sql',
   'supabase/tests/rls_workspace_isolation.sql',
+  'supabase/tests/platform_roles.sql',
   'scripts/mock-platum-api.js',
   'bot/bot.js',
   'bot/package.json',
@@ -237,8 +239,11 @@ const clientAuthSource = fs.readFileSync(path.join(ROOT, 'client-space-auth.js')
 const dataSource = fs.readFileSync(path.join(ROOT, 'cabinet-data.js'), 'utf8');
 const intakeHtml = fs.readFileSync(path.join(ROOT, 'prohor-intake.html'), 'utf8');
 const migrationSource = fs.readFileSync(path.join(ROOT, 'supabase/migrations/20260821122450_platum_workspace_mvp.sql'), 'utf8');
+const platformRoleMigration = fs.readFileSync(path.join(ROOT, 'supabase/migrations/20261017110000_platform_roles.sql'), 'utf8');
 const rlsTestSource = fs.readFileSync(path.join(ROOT, 'supabase/tests/rls_workspace_isolation.sql'), 'utf8');
+const platformRoleTestSource = fs.readFileSync(path.join(ROOT, 'supabase/tests/platform_roles.sql'), 'utf8');
 const publicConfig = fs.readFileSync(path.join(ROOT, 'client-space.config.js'), 'utf8');
+const localServerSource = fs.readFileSync(path.join(ROOT, 'scripts/dev-server.js'), 'utf8');
 const supabaseConfig = fs.readFileSync(path.join(ROOT, 'supabase/config.toml'), 'utf8');
 
 const knownClientMarkers = [
@@ -305,10 +310,13 @@ check(
     && /isLocalHost\s*&&\s*localTestUser/.test(clientAuthSource)
 );
 check(
-  'public test workspace is isolated local demo access',
-  /enablePublicTestWorkspace:\s*true/.test(publicConfig)
+  'public demo access is disabled in production and remains guarded for local verification',
+  /enablePublicTestWorkspace:\s*false/.test(publicConfig)
+    && /enablePublicTestWorkspace:true/.test(localServerSource)
     && /Enter test workspace/.test(clientHtml)
-    && /Test access uses isolated demo data/.test(clientHtml)
+    && !/Test access uses isolated demo data/.test(clientHtml)
+    && /dom\.previewLogin\.hidden\s*=\s*!publicTestWorkspaceEnabled/.test(clientAuthSource)
+    && /if\s*\(!publicTestWorkspaceEnabled\)\s*return/.test(clientAuthSource)
     && /TEST_WORKSPACE_SESSION_KEY\s*=\s*'client-cabinet:test-workspace:v1'/.test(clientAuthSource)
     && /sessionStorage\.getItem\(TEST_WORKSPACE_SESSION_KEY\)\s*===\s*'active'/.test(clientAuthSource)
     && /hasAuthRedirect[\s\S]*?if\s*\(hasAuthRedirect\)\s*setPublicTestWorkspace\(false\);[\s\S]*?if\s*\(publicTestWorkspaceRequested\(\)\)/.test(clientAuthSource)
@@ -363,6 +371,16 @@ check(
     && /client A cannot create a request in workspace B/.test(rlsTestSource)
     && /assigned operator can respond/.test(rlsTestSource)
     && /client A sees the persisted operator response/.test(rlsTestSource)
+);
+check(
+  'platform roles preserve global founder access and workspace isolation',
+  /create table public\.platform_roles/.test(platformRoleMigration)
+    && /lower\(email\) in/.test(platformRoleMigration)
+    && /private\.is_platform_operator/.test(platformRoleMigration)
+    && /revoke insert, update, delete on public\.workspace_members from authenticated/.test(platformRoleMigration)
+    && /founder sees all workspaces without a workspace membership/.test(platformRoleTestSource)
+    && /client still sees only its assigned workspace/.test(platformRoleTestSource)
+    && /client cannot write to another workspace/.test(platformRoleTestSource)
 );
 
 console.log('\n== Summary ==');
