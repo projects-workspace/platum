@@ -69,13 +69,18 @@ function uiSourceKeys(code) {
       else if(character===')'){if(depth===0)break;depth--;}
       else if(character===','&&depth===0)break;
     }
-    for(const literal of code.slice(start,index).matchAll(/'((?:[^'\\]|\\.)*)'/g))if(/[A-Za-z]/.test(literal[1]))keys.push(literal[1]);
+    const argument=code.slice(start,index);
+    for(const literal of argument.matchAll(/'((?:[^'\\]|\\.)*)'/g)){
+      const before=argument.slice(0,literal.index),after=argument.slice(literal.index+literal[0].length);
+      if(/(?:===|!==)\s*$/.test(before)||/^\s*(?:===|!==)/.test(after))continue;
+      if(/[A-Za-z]/.test(literal[1]))keys.push(literal[1]);
+    }
   }
   return keys;
 }
 test('marked HTML and explicit UI tokens have Ukrainian catalog coverage',()=>{
   const {locale}=runtime();
-  for(const filename of ['client-space.html','prohor-intake.html','index.html','workspace-app.js','workspace-calendar.js','workspace-learning.js','workspace-progress.js','client-space.js','agency-os.js']) {
+  for(const filename of ['client-space.html','prohor-intake.html','index.html','workspace-app.js','workspace-calendar.js','workspace-learning.js','workspace-progress.js','workspace-network.js','client-space.js','agency-os.js']) {
     const code=fs.readFileSync(path.join(root,filename),'utf8');
     for(const key of uiSourceKeys(code))assert.equal(locale.has(key),true,filename+': missing dynamic UI key '+key);
     for(const expression of [/data-i18n-(?:key|placeholder|aria-label|title)="([^"$<>]+)"/g,/(?:uiText|i18n\.mark|i18n\.t|ui)\('((?:[^'\\]|\\.)*)'/g]) {

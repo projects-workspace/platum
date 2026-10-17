@@ -15,6 +15,7 @@ docs/
 *client-space/
 tmp/
 outputs/
+Транскрипти/
 *.md
 *.log
 *.pid

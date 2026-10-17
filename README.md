@@ -30,6 +30,8 @@ node --test tests/team-api.test.js
 npm --prefix bot test
 ```
 
+For the approved contacts/closed-community extension, its schema prerequisites, local PostgreSQL/browser checks and partner release handoff are in [Contacts and community delivery](docs/NETWORK_RELEASE.md). Source implementation does not establish a hosted release.
+
 The original deterministic mock remains a legacy UI fixture:
 
 ```sh

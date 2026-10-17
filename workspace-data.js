@@ -82,7 +82,7 @@
     const result = [];
     for (let offset = 0; ; offset += 200) {
       const query = new URLSearchParams({ select: '*', order: 'id.asc', ...filters, limit: '200', offset: String(offset) });
-      if (['project_context', 'material_reads', 'workspace_reads', 'workspace_members'].includes(table)) query.delete('order');
+      if (['project_context', 'material_reads', 'workspace_reads', 'workspace_members', 'community_members', 'community_rsvps'].includes(table)) query.delete('order');
       const batch = await request(table + '?' + query, { signal });
       if (!Array.isArray(batch)) throw new Error('The workspace returned an invalid response. Refresh to try again.');
       result.push(...batch);
@@ -105,7 +105,8 @@
       'material_reviews', 'material_reads', 'forms', 'form_submissions', 'workspace_files', 'activity', 'decisions', 'workspace_reads', 'workspace_invitations', 'deliverables',
       'calendar_events', 'calendar_versions', 'calendar_responses', 'workspace_availability',
       'learning_units', 'learning_versions', 'learning_submissions', 'learning_feedback', 'inspiration_items', 'inspiration_comments',
-      'work_milestones', 'milestone_history', 'period_reports', 'report_publications', 'template_applications'];
+      'work_milestones', 'milestone_history', 'period_reports', 'report_publications', 'template_applications',
+      'workspace_contacts', 'contact_interactions'];
     const values = await Promise.all(names.map(name => rows(name, filter, signal)));
     const people = await rpc('platum_members', { workspace_id: workspace }, signal);
     const templates = await rows('workspace_templates', {}, signal);
@@ -133,10 +134,29 @@
     return data;
   }
   function mutate(action, workspace, payload, operation = crypto.randomUUID()) {
+    if (action.startsWith('contact.')) return networkMutate(action, workspace, payload, operation);
     const regular = action === 'workspace.save' || action.startsWith('calendar.') || action === 'availability.save';
     const learning = action.startsWith('learning.') || action.startsWith('inspiration.');
     const progress = ['milestone.','report.','template.'].some(prefix=>action.startsWith(prefix));
     return rpc(regular ? 'platum_regular_mutate' : learning ? 'platum_learning_mutate' : progress ? 'platum_progress_mutate' : 'platum_mutate', { action, workspace_id: workspace, payload, operation_id: operation });
+  }
+  async function network(signal) {
+    await rpc('platum_accept_community_invitations', {}, signal);
+    const names=['communities','community_members','community_invitations','community_posts','community_comments','community_events','community_event_versions','community_rsvps','community_referrals'];
+    const values=await Promise.all(names.map(name=>rows(name,{},signal)));
+    return Object.fromEntries(names.map((name,index)=>[name,values[index]]));
+  }
+  function networkMutate(action, scope, payload, operation=crypto.randomUUID()) {
+    return rpc('platum_network_mutate',{action,scope_id:scope,payload,operation_id:operation});
+  }
+  async function community(action,scope,payload,operation=crypto.randomUUID()) {
+    let response;
+    try {response=await fetch('/api/community',{method:'POST',cache:'no-store',headers:{Authorization:'Bearer '+await token(),'Content-Type':'application/json'},
+      body:JSON.stringify({action,community_id:scope,payload,operation_id:operation}),signal:AbortSignal.timeout(30000)});}
+    catch {throw new Error('Community management could not be reached. Your input is kept; try again.');}
+    const result=await response.json().catch(()=>({}));
+    if(!response.ok)throw new Error(result.error||'Community management could not complete this action.');
+    return result;
   }
   async function upload(workspace, file, shared, progress) {
     if (!progress.reservation) {
@@ -234,5 +254,5 @@
       }),
     ];
   }
-  window.PLATUM_DATA = Object.freeze({ access, bundle, team, mutate, upload, download, exportWorkspace, rpc, queue, saveBlob });
+  window.PLATUM_DATA = Object.freeze({ access, bundle, team, mutate, network, networkMutate, community, upload, download, exportWorkspace, rpc, queue, saveBlob });
 })();
