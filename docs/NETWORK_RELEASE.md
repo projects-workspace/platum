@@ -2,6 +2,8 @@
 
 The approved first implementation extends the existing Platum application. Delivery is through the partner's GitHub/Supabase/Vercel process. This document is a release guide; `PROJECT_STATE.md` holds the current implementation checkpoint.
 
+Review: [draft PR #1](https://github.com/projects-workspace/platum/pull/1), branch `codex/community-contacts`, based on `codex/platform-founder-roles`. Both source layers must be included when the partner publishes; this PR does not merge the predecessor.
+
 ## Included behavior
 
 - Contacts belong to a workspace and are readable/writable only by its operators. A contact can exist without an account. Overlapping categories, relationship context, a responsible operator, next action/date, optional existing member/task links, search, history and archive/restore are included. Linking an account grants no access. Client exports do not include contacts.
