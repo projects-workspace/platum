@@ -2,6 +2,8 @@
 
 The approved first implementation extends the existing Platum application. Delivery is through the partner's GitHub/Supabase/Vercel process. This document is a release guide; `PROJECT_STATE.md` holds the current implementation checkpoint.
 
+Production delivery was completed on 2026-10-20. The steps below record its order and must not be replayed on the existing production project. See `PROJECT_STATE.md` section 12 for the live verification and the manual repair of the predecessor's missing migration-history row.
+
 Review: [draft PR #1](https://github.com/projects-workspace/platum/pull/1), branch `codex/community-contacts`, based on `codex/platform-founder-roles`. Both source layers must be included when the partner publishes; this PR does not merge the predecessor.
 
 ## Included behavior
