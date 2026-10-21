@@ -8,6 +8,8 @@ Production delivery was completed on 2026-10-20. The steps below record its orde
 
 Source branch `codex/cabinet-personalization` extends the existing cabinet and configured navigation. `PROJECT_STATE.md` section 15 holds the implementation checkpoint. This package is independent development while the partner completes the previously approved privacy release; it does not merge or deploy itself.
 
+Review: [draft PR #4](https://github.com/projects-workspace/platum/pull/4), implementation `565aab2`. GitHub runs `39585431344` and `39585513057` passed for that source. The reviewed publication must include `workspace-navigation.js` and the matching entry/shell/data assets.
+
 - Personal/project navigation is separated, with configured module order preserved, scoped next actions and current-role tool visibility. These are presentation changes; authorization remains server-side. Common Platum pages retain their existing identity.
 - Welcome text and the three existing palettes use the current settings path. A logo is optional and requires a ready, explicitly client-visible PNG/JPEG/WebP from the same workspace. Upload/share it through Files first; choosing it does not change file permissions. Clients cannot edit appearance.
 - Apply only missing `20261021180000_workspace_branding.sql` through the existing transactional process after confirming the current migration chain. It adds no tables or seed data, preserves old callers/preferences and keeps the original settings/calendar wrapper and grants. Do not replay earlier migrations, repair or cleanup. The logo selector alone waits for this optional capability; ordinary navigation/settings continue without it.
