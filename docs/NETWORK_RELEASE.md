@@ -8,7 +8,7 @@ Production delivery was completed on 2026-10-20. The steps below record its orde
 
 The owner accepted the initial personal privacy/access model and authorized implementation after PR #2. Source branch: `codex/personal-privacy`, based on `main` `c46a9ac`. `PROJECT_STATE.md` section 14 is the current implementation checkpoint. This section supersedes the old PR #2-only publication prompt; previous procedures below remain historical or describe the predecessor.
 
-Review: [draft PR #3](https://github.com/projects-workspace/platum/pull/3), implementation `f5bae28`; its GitHub Actions run `39574677256` passed. Source is prepared for review and the partner process, with no production mutation or publication.
+Review: [merged PR #3](https://github.com/projects-workspace/platum/pull/3), merge `f97e5f7`, reviewed head `e839426` including the readiness guard. GitHub runs `39577251646` and `39577258001` passed. Publish from the matching `origin/main`, preserving the partner release record. This merge task performed no SQL or manual Vercel deployment.
 
 Predecessor release update: partner checkpoint `3669ff3` records PR #2's `20261021120000` migration and matching Vercel source as published. Confirm this history rather than replaying it. The remaining privacy migration is `20261021160000`. Git deployments from `main` are enabled, so the frontend now keeps prior work available while a missing privacy RPC is reported as pending; privacy controls and attachment archives wait for schema readiness. This guard is not hosted privacy acceptance.
 
