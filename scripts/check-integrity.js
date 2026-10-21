@@ -73,6 +73,7 @@ const requiredFiles = [
   'workspace-progress.css',
   'workspace-network.js',
   'workspace-personal.js',
+  'workspace-navigation.js',
   'workspace-archive.js',
   'api/community.js',
   'supabase/migrations/20261017230000_contacts_and_community.sql',

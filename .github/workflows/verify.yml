@@ -9,6 +9,7 @@ on:
       - codex/community-contacts
       - codex/community-participation
       - codex/personal-privacy
+      - codex/cabinet-personalization
 
 permissions:
   contents: read
@@ -31,7 +32,7 @@ jobs:
         run: node scripts/check-integrity.js
 
       - name: Verify workspace management authorization
-        run: node --test tests/team-api.test.js tests/community-api.test.js tests/files-api.test.js tests/workspace-routing.test.js tests/calendar-domain.test.js tests/localization.test.js tests/archive.test.js tests/export.test.js tests/personal-readiness.test.js
+        run: node --test tests/team-api.test.js tests/community-api.test.js tests/files-api.test.js tests/workspace-routing.test.js tests/calendar-domain.test.js tests/localization.test.js tests/archive.test.js tests/export.test.js tests/personal-readiness.test.js tests/navigation.test.js tests/branding.test.js
 
       - name: Verify network migration and row isolation in local PostgreSQL
         run: |
@@ -40,6 +41,7 @@ jobs:
           PLATUM_PGLITE_MODULE="${{ runner.temp }}/platum-sql/node_modules/@electric-sql/pglite" node tests/community-upgrade.cjs
           PLATUM_PGLITE_MODULE="${{ runner.temp }}/platum-sql/node_modules/@electric-sql/pglite" node tests/personal-database.cjs
           PLATUM_PGLITE_MODULE="${{ runner.temp }}/platum-sql/node_modules/@electric-sql/pglite" node tests/personal-upgrade.cjs
+          PLATUM_PGLITE_MODULE="${{ runner.temp }}/platum-sql/node_modules/@electric-sql/pglite" node tests/branding-database.cjs
 
       - name: Install Telegram worker dependencies
         run: npm ci --prefix bot

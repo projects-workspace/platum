@@ -4,6 +4,23 @@ The approved first implementation extends the existing Platum application. Deliv
 
 Production delivery was completed on 2026-10-20. The steps below record its order and must not be replayed on the existing production project. See `PROJECT_STATE.md` section 12 for the live verification and the manual repair of the predecessor's missing migration-history row.
 
+## Cabinet personalisation and navigation — next source package
+
+Source branch `codex/cabinet-personalization` extends the existing cabinet and configured navigation. `PROJECT_STATE.md` section 15 holds the implementation checkpoint. This package is independent development while the partner completes the previously approved privacy release; it does not merge or deploy itself.
+
+- Personal/project navigation is separated, with configured module order preserved, scoped next actions and current-role tool visibility. These are presentation changes; authorization remains server-side. Common Platum pages retain their existing identity.
+- Welcome text and the three existing palettes use the current settings path. A logo is optional and requires a ready, explicitly client-visible PNG/JPEG/WebP from the same workspace. Upload/share it through Files first; choosing it does not change file permissions. Clients cannot edit appearance.
+- Apply only missing `20261021180000_workspace_branding.sql` through the existing transactional process after confirming the current migration chain. It adds no tables or seed data, preserves old callers/preferences and keeps the original settings/calendar wrapper and grants. Do not replay earlier migrations, repair or cleanup. The logo selector alone waits for this optional capability; ordinary navigation/settings continue without it.
+- After an approved source merge, verify the matching Vercel source and canonical URL. The CSP change permits blob images without adding script/frame origins. Verify shared logo delivery as an assigned client, rejection of private/cross-project/wrong-type logo references, failure fallback/removal, common-page identity, client/collaborator menus, current section disclosure and mobile keyboard/touch behavior. No real users/invitations or membership changes are needed incidentally.
+- No new provider, integration or public Storage bucket is required. Existing Supabase/Storage/Auth and the file API are reused; local synthetic bytes are not proof of hosted acceptance or approval of a real customer's branding.
+
+Additional local checks:
+
+    node --test tests/navigation.test.js tests/branding.test.js
+    PLATUM_PGLITE_MODULE=/absolute/local/path/to/@electric-sql/pglite node tests/branding-database.cjs
+
+The existing guarded browser harness also covers this package and missing-branding-schema behavior. Its fixture PNG is synthetic; choosing a real logo is a deliberate later project action.
+
 ## Personal privacy and account cabinet — current source package
 
 The owner accepted the initial personal privacy/access model and authorized implementation after PR #2. Source branch: `codex/personal-privacy`, based on `main` `c46a9ac`. `PROJECT_STATE.md` section 14 is the current implementation checkpoint. This section supersedes the old PR #2-only publication prompt; previous procedures below remain historical or describe the predecessor.

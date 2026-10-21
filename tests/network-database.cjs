@@ -22,7 +22,7 @@ const service=async(action,actorId,c,payload,op=randomUUID())=>{
   await actor(actorId,'service_role');
   return (await query('select public.platum_community_service($1,$2,$3,$4::jsonb,$5) result',[action,actorId,c,JSON.stringify(payload),op]))[0].result;
 };
-async function bootstrap({deferParticipation=false,deferPrivacy=false}={}){
+async function bootstrap({deferParticipation=false,deferPrivacy=false,deferBranding=false}={}){
   await db.exec(`create role anon; create role authenticated; create role service_role bypassrls;
     create schema auth; create schema storage; create schema extensions;
     create table auth.users(id uuid primary key,email text,email_confirmed_at timestamptz,raw_user_meta_data jsonb default '{}',raw_app_meta_data jsonb default '{}');
@@ -34,7 +34,7 @@ async function bootstrap({deferParticipation=false,deferPrivacy=false}={}){
     alter table storage.objects enable row level security;grant usage on schema storage to authenticated,anon,service_role;
     grant select,insert on storage.objects to authenticated;`);
   for(const name of fs.readdirSync(path.join(__dirname,'../supabase/migrations')).filter(n=>n.endsWith('.sql')).sort()){
-    if(deferParticipation&&name==='20261021120000_community_participation.sql'||deferPrivacy&&name==='20261021160000_personal_privacy.sql')break;
+    if(deferParticipation&&name==='20261021120000_community_participation.sql'||deferPrivacy&&name==='20261021160000_personal_privacy.sql'||deferBranding&&name==='20261021180000_workspace_branding.sql')break;
     try{await db.exec(fs.readFileSync(path.join(__dirname,'../supabase/migrations',name),'utf8'));}
     catch(e){throw new Error('Migration '+name+': '+e.message);}
   }

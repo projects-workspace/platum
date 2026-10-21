@@ -17,7 +17,7 @@ const runAs=(id,fn,role='authenticated')=>withSQL(async()=>{await actor(id,role)
 const secret='sb_secret_synthetic_test_only';
 const response=(data,status=200)=>new Response(JSON.stringify(data),{status,headers:{'Content-Type':'application/json'}});
 async function rpc(name,payload,id,role='authenticated'){
- const specs={platum_export:['workspace_id'],platum_personal_data:[],platum_personal_mutate:['action','payload','operation_id'],platum_accept_invitations:[],platum_accept_community_invitations:[],platum_members:['workspace_id'],platum_network_mutate:['action','scope_id','payload','operation_id'],platum_community_service:['action','actor_id','community_id','payload','operation_id']};
+ const specs={platum_branding_capabilities:[],platum_regular_mutate:['action','workspace_id','payload','operation_id'],platum_export:['workspace_id'],platum_personal_data:[],platum_personal_mutate:['action','payload','operation_id'],platum_accept_invitations:[],platum_accept_community_invitations:[],platum_members:['workspace_id'],platum_network_mutate:['action','scope_id','payload','operation_id'],platum_community_service:['action','actor_id','community_id','payload','operation_id']};
  const args=specs[name];if(!args)throw new Error('Unexpected fixture RPC '+name);
  const values=args.map(k=>k==='payload'?JSON.stringify(payload[k]):payload[k]);
  return runAs(id,async()=>(await query('select public.'+name+'('+args.map((k,i)=>'$'+(i+1)+(k==='payload'?'::jsonb':'')).join(',')+') result',values))[0].result,role);
@@ -31,7 +31,7 @@ let server,browser;
  await db.query("insert into public.workspaces(id,slug,name,created_by,updated_by) values($1,'network-browser','Network browser',$2,$2)",[workspace,ids.founder]);
  await db.query("insert into public.workspace_members(workspace_id,user_id,role,created_by) values($1,$2,'team',$3)",[workspace,ids.team,ids.founder]);
  await db.query("insert into public.workspace_members(workspace_id,user_id,role,created_by) values($1,$2,'client',$3),($1,$3,'owner',$3)",[workspace,ids.client,ids.founder]);
- const staticFiles=new Set(['index.html','client-space.html','client-space.css','agency-os.css','workspace-app.css','workspace-calendar.css','workspace-learning.css','workspace-progress.css','client-space.i18n.js','client-space.config.js','client-space-auth.js','cabinet-data.js','workspace-data.js','workspace-calendar-domain.js','workspace-calendar.js','workspace-learning.js','workspace-progress.js','workspace-network.js','workspace-personal.js','workspace-archive.js','workspace-app.js','client-space.js','agency-os.js']);
+ const staticFiles=new Set(['index.html','client-space.html','client-space.css','agency-os.css','workspace-app.css','workspace-calendar.css','workspace-learning.css','workspace-progress.css','client-space.i18n.js','client-space.config.js','client-space-auth.js','cabinet-data.js','workspace-data.js','workspace-calendar-domain.js','workspace-calendar.js','workspace-learning.js','workspace-progress.js','workspace-network.js','workspace-personal.js','workspace-navigation.js','workspace-archive.js','workspace-app.js','client-space.js','agency-os.js']);
  let communityHandler,filesHandler;
  server=http.createServer(async(req,res)=>{
   const send=(value,status=200)=>{res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify(value));};
@@ -153,10 +153,35 @@ let server,browser;
  console.log('PASS personal UI: private account book, field-limited agency sharing/editing/revocation, API redaction, busy-only calendar, unassigned cabinet, administrator-approved application/exit, ZIP and attachment stream.');
  // A main Git deployment must not break existing work while the privacy migration is pending.
  const waiting=await pageFor('client');await waiting.route('**/rest/v1/rpc/platum_personal_data',r=>r.fulfill({status:404,contentType:'application/json',body:JSON.stringify({code:'PGRST202',message:'Function not found'})}));
- await go(waiting,'work');assert.equal(await waiting.locator('#ws-nav a[href="#my-contacts"]').count(),0);assert.equal(await waiting.locator('[data-action=export][data-format=archive]:visible').count(),0);
+ await go(waiting,'work');assert.equal(await waiting.locator('#ws-account-nav a[href="#my-contacts"]').count(),0);assert.equal(await waiting.locator('[data-action=export][data-format=archive]:visible').count(),0);
  await go(waiting,'calendar');assert.equal(await waiting.locator('[data-action=personal-event-new]').count(),0);
  await go(waiting,'my-contacts');await waiting.getByRole('heading',{name:'Personal features are being prepared.',exact:true}).waitFor();
  console.log('PASS pending migration UI: existing work/calendar remain available; private controls/archives wait; direct personal route shows pending state.');
+
+ // Cabinet identity, scoped navigation and authorized project logo delivery.
+ await withSQL(async()=>{await db.exec('reset role');for(const [title,kind,assigned,visible] of [['Підготувати матеріали до наступної зустрічі','client',ids.client,true],['Перевірити й погодити матеріали клієнта','team',ids.team,false],['Other participant assignment','team',ids.founder,true]])await db.query("insert into public.tasks(workspace_id,title,assignee_kind,assignee_user_id,client_visible,created_by) values($1,$2,$3,$4,$5,$6)",[workspace,title,kind,assigned,visible,ids.founder]);});
+ const team=await pageFor('team');await go(team,'home');await go(client,'home');
+ assert.equal(await client.locator('#ws-nav a[href="#members"]').count(),0);assert.equal(await client.locator('#ws-nav a[href="#settings"]').count(),0);
+ assert.equal(await team.locator('#ws-nav a[href="#settings"]').count(),1);assert.equal(await team.locator('#ws-nav a[href="#members"]').count(),0);
+ await go(client,'materials');assert.equal(await client.locator('[data-nav-section=more]').getAttribute('open'),'');assert.equal(await client.locator('#ws-nav a[href="#materials"]').getAttribute('aria-current'),'page');
+ await go(client,'personal');await client.getByRole('heading',{name:'Your collaborations',exact:true}).waitFor();await client.locator('#ws-content').getByText('Client',{exact:true}).waitFor();await client.getByRole('heading',{name:'Підготувати матеріали до наступної зустрічі',exact:true}).waitFor();assert.equal(await client.getByRole('heading',{name:'Other participant assignment',exact:true}).count(),0);assert.equal(await client.locator('.ws-workspace-picker').isVisible(),false);
+ await go(team,'personal');await team.locator('#ws-content').getByText('Collaborator',{exact:true}).waitFor();await team.getByRole('heading',{name:'Перевірити й погодити матеріали клієнта',exact:true}).waitFor();assert.equal(await team.getByRole('heading',{name:'Other participant assignment',exact:true}).count(),0);
+ const logoId=randomUUID(),privateLogoId=randomUUID(),logoPath=workspace+'/'+logoId+'/logo.png';
+ // Genuine tiny PNG fixture: generated bytes, not a real customer's branding.
+ const zlib=require('node:zlib');const checksum=bytes=>{let c=0xffffffff;for(const b of bytes){c^=b;for(let n=0;n<8;n++)c=c&1?0xedb88320^(c>>>1):c>>>1;}return (c^0xffffffff)>>>0;};
+ const chunk=(name,data)=>{const kind=Buffer.from(name),length=Buffer.alloc(4),crc=Buffer.alloc(4);length.writeUInt32BE(data.length);crc.writeUInt32BE(checksum(Buffer.concat([kind,data])));return Buffer.concat([length,kind,data,crc]);};
+ const ihdr=Buffer.alloc(13);ihdr.writeUInt32BE(1,0);ihdr.writeUInt32BE(1,4);ihdr[8]=8;ihdr[9]=2;
+ const png=Buffer.concat([Buffer.from([137,80,78,71,13,10,26,10]),chunk('IHDR',ihdr),chunk('IDAT',zlib.deflateSync(Buffer.from([0,33,77,57]))),chunk('IEND',Buffer.alloc(0))]);fileStore.set(logoPath,png);
+ await withSQL(async()=>{await db.exec('reset role');for(const [id,visible] of [[logoId,true],[privateLogoId,false]])await db.query("insert into public.workspace_files(id,workspace_id,path,name,mime_type,size_bytes,status,uploaded_by,client_visible) values($1,$2,$3,$4,'image/png',$5,'ready',$6,$7)",[id,workspace,id===logoId?logoPath:workspace+'/'+id+'/internal.png',visible?'Shared project logo':'Internal image',png.length,ids.founder,visible]);});
+ await go(founder,'settings');assert.equal(await founder.locator('[name=logo_file_id] option[value="'+privateLogoId+'"]').count(),0);await founder.locator('[name=logo_file_id]').selectOption(logoId);await founder.locator('[name=welcome]').fill('Welcome to our shared project');await founder.locator('[name=accent]').selectOption('clay');await save(founder);
+ await go(client,'home');await client.getByText('Welcome to our shared project',{exact:true}).waitFor();await client.locator('[data-project-logo]:visible').waitFor();assert.equal(await client.locator('#workspace-app').getAttribute('data-accent'),'clay');assert.ok((await client.locator('[data-project-logo]').getAttribute('src')).startsWith('blob:'));
+ const currentLogo=await client.locator('[data-project-logo]').getAttribute('src');await client.evaluate(()=>{window.logoRevocations=[];const revoke=URL.revokeObjectURL.bind(URL);URL.revokeObjectURL=url=>{window.logoRevocations.push(url);revoke(url);};});
+ await client.locator('#ws-account-nav a[href="#personal"]').click();await client.getByRole('heading',{name:'My cabinet',exact:true}).waitFor();assert.equal(await client.locator('[data-project-logo]').count(),0);assert.equal(await client.locator('#workspace-app').getAttribute('data-accent'),'forest');assert.equal(await client.evaluate(url=>window.logoRevocations.includes(url),currentLogo),true);
+ const deniedLogo=await pageFor('client');await deniedLogo.route('**/api/files?id='+logoId,r=>r.fulfill({status:404,contentType:'application/json',body:'{}'}));const deniedResponse=deniedLogo.waitForResponse(r=>r.url().includes('/api/files?id='+logoId));await go(deniedLogo,'home');await deniedResponse;assert.equal(await deniedLogo.locator('[data-project-logo]:visible').count(),0);await deniedLogo.getByText('Welcome to our shared project',{exact:true}).waitFor();
+ await go(founder,'settings');await founder.locator('[name=logo_file_id]').selectOption('');await save(founder);await go(client,'home');assert.equal(await client.locator('[data-project-logo]').count(),0);await client.getByText('Welcome to our shared project',{exact:true}).waitFor();
+ const landing=await pageFor('client');await landing.goto(base+'/client-space.html');await landing.getByRole('heading',{name:'My cabinet',exact:true}).waitFor();assert.equal(new URL(landing.url()).hash,'#personal');await landing.reload();await landing.getByRole('heading',{name:'My cabinet',exact:true}).waitFor();
+ const oldBranding=await pageFor('founder');await oldBranding.route('**/rest/v1/rpc/platum_branding_capabilities',r=>r.fulfill({status:404,contentType:'application/json',body:JSON.stringify({code:'PGRST202',message:'Not installed'})}));await go(oldBranding,'settings');assert.equal(await oldBranding.locator('[name=logo_file_id]').count(),0);await oldBranding.getByText('Logo selection will be available after the project update.',{exact:true}).waitFor();
+ console.log('PASS cabinet/navigation: membership-scoped tools, active expanded section, client/collaborator cabinet, shared image logo/authenticated blob, welcome/accent persistence, common identity, explicit logo removal and pending branding schema.');
  const evidence=process.env.PLATUM_NETWORK_SCREENSHOTS||'/private/tmp/platum-network-evidence';fs.mkdirSync(evidence,{recursive:true});
  for(const page of [founder,member]){
   await go(page,'community/'+c.id);
@@ -178,6 +203,12 @@ let server,browser;
    await page.screenshot({path:path.join(evidence,(page===founder?'manager-calendar':'member-contacts')+'-'+width+'.png'),fullPage:true});
    await go(page,'community/'+c.id);
   }
+ }
+ for(const rolePage of [client,team])for(const width of [1440,390,320]){
+  await rolePage.setViewportSize({width,height:1000});await go(rolePage,'personal');await rolePage.locator('[data-language-selector]:visible').first().selectOption('uk');
+  assert.equal(await rolePage.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'cabinet overflow at '+width);await rolePage.screenshot({path:path.join(evidence,(rolePage===client?'client':'collaborator')+'-cabinet-'+width+'.png'),fullPage:true});
+  await go(rolePage,'home');assert.equal(await rolePage.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'project overflow at '+width);await rolePage.screenshot({path:path.join(evidence,(rolePage===client?'client':'collaborator')+'-project-'+width+'.png'),fullPage:true});
+  if(width===390){await rolePage.locator('[data-action=menu]').click();assert.equal(await rolePage.locator('[data-action=menu]').getAttribute('aria-expanded'),'true');await rolePage.screenshot({path:path.join(evidence,(rolePage===client?'client':'collaborator')+'-navigation-'+width+'.png'),fullPage:true,animations:'disabled'});await rolePage.locator('[data-action=menu-close]').click();assert.equal(await rolePage.locator('[data-action=menu]').getAttribute('aria-expanded'),'false');await rolePage.locator('[data-action=menu]').click();await rolePage.keyboard.press('Escape');assert.equal(await rolePage.locator('[data-action=menu]').getAttribute('aria-expanded'),'false');assert.equal(await rolePage.evaluate(()=>document.activeElement?.dataset.action),'menu');}
  }
  for(const width of [1440,390,320]){
   await client.setViewportSize({width,height:1000});await go(client,'my-contact/'+contact.id);await client.locator('[data-language-selector]:visible').first().selectOption('uk');
