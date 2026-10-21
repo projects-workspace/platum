@@ -13,7 +13,7 @@ function firstWorkspaceRoute(canCreate, loading = false) {
   const content = { innerHTML: '' };
   vm.runInNewContext(renderSource + '\nrender();', {
     i18n: { apply() {}, t: String }, uiText: String,
-    networkFeature: null,
+    networkFeature: null, personalFeature:null, globalView:()=>false,
     state, document: { getElementById: () => content }, navigation() {},
     editorView: () => 'workspace-editor', heading: () => '',
     empty: () => 'no-access', button: () => '',
@@ -42,14 +42,14 @@ test('workspace creation waits for capabilities to finish loading', () => {
 for (const hasWorkspace of [false, true]) test('shared-history export visibility follows current workspace access: ' + hasWorkspace, () => {
   const navigationSource = source.slice(source.indexOf('  function navigation() {'), source.indexOf('  function tasksList('));
   const active = hasWorkspace ? { id: 'workspace', name: 'Known workspace', role: 'client' } : null;
-  const exportControl = { hidden: false };
+  const exportControl = { hidden: false,dataset:{} };
   const nodes = {};
   vm.runInNewContext(navigationSource + '\nnavigation();', {
     i18n: { apply() {}, t: String, mark: String }, uiText: String,
     state: { active, workspaces: active ? [active] : [], view: 'home', capabilities: { canCreate: false } },
-    root: { dataset: {}, querySelector: () => exportControl },
+    root: { dataset: {}, querySelector: () => exportControl,querySelectorAll:()=>[exportControl] },
     document: { getElementById: id => nodes[id] ||= {}, querySelector: () => ({}), title: '' },
-    networkFeature: null,
+    networkFeature: null, personalFeature:null, globalView:()=>false,
     labels: {}, icons: {}, escape: String, operator: () => false, manager: () => false,
   });
   assert.equal(exportControl.hidden, !hasWorkspace);

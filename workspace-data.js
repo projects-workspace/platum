@@ -4,6 +4,8 @@
   const base = String(config.supabaseUrl || '').replace(/\/$/, '');
   let serverValidated = false;
   const errors = {
+    CONTACT_VERIFICATION_REQUIRED: 'Verify this person and account before linking them.',
+    EXPORT_OFFER_REQUIRED: 'Offer the client an export with attachments before closing access.',
     EMPTY_MATERIAL: 'Add content, a reference or a file before publishing.',
     CONFLICT: 'Someone updated this item. Your draft is still here. Load the latest version before saving again.',
     FORM_CHANGED: 'The questions changed while you were answering. Your answers are kept here. Load the latest form to continue.',
@@ -146,6 +148,23 @@
     const values=await Promise.all(names.map(name=>rows(name,{},signal)));
     return Object.fromEntries(names.map((name,index)=>[name,values[index]]));
   }
+  let personalReady=false;
+  const personalPending='Personal features are being prepared. Please refresh later or contact the team.';
+  async function personal(signal){
+    try{
+      const data=await rpc('platum_personal_data',{},signal);
+      if(!data||!['contacts','events','busy','people','joinable','applications'].every(key=>Array.isArray(data[key])))throw new Error('The workspace returned an invalid response. Refresh to try again.');
+      personalReady=true;return {...data,available:true};
+    }catch(error){
+      personalReady=false;
+      if(error.status===404&&['PGRST202','PGRST205'].includes(error.code))return {available:false,contacts:[],events:[],busy:[],people:[],joinable:[],applications:[]};
+      throw error;
+    }
+  }
+  async function requirePersonal(){if(!personalReady)await personal();if(!personalReady)throw new Error(personalPending);}
+  async function personalMutate(action,scope,payload,operation=crypto.randomUUID()){
+    await requirePersonal();return rpc('platum_personal_mutate',{action,payload,operation_id:operation});
+  }
   function networkMutate(action, scope, payload, operation=crypto.randomUUID()) {
     return rpc('platum_network_mutate',{action,scope_id:scope,payload,operation_id:operation});
   }
@@ -197,6 +216,33 @@
   async function exportWorkspace(workspace, format = 'markdown') {
     const data = await rpc('platum_export', { workspace_id: workspace });
     const filename = 'platum-workspace-' + new Date().toISOString().slice(0, 10);
+    if(format==='archive'){
+      await requirePersonal();
+      const archivePrefix=filename+'-'+crypto.randomUUID().slice(0,8);
+      const encode=value=>new TextEncoder().encode(JSON.stringify(value,null,2));
+      const manifest={format:'platum.archive.v1',exported_at:data.exported_at,files:[],volumes:[]};
+      const files=data.files||[],metadata={name:'workspace.json',data:encode(data)};
+      const readme={name:'README.txt',data:new TextEncoder().encode('Platum — експорт співпраці / collaboration export\nworkspace.json — доступна історія та записи / shared history.\nattachments/ — доступні вкладення / accessible files.\nmanifest.json — перелік файлів і частин архіву / file and volume manifest.\nЗбережіть усі ZIP-частини й фінальний маніфест. NOT_INCLUDED означає, що файл був недоступний або неповний під час експорту.\n')};
+      const baseEntries=[metadata,readme];
+      let entries=[...baseEntries],size=metadata.data.length+readme.data.length,volume=1;
+      const flush=async()=>{const name=archivePrefix+'-part-'+volume+'.zip';manifest.volumes.push(name);entries.push({name:'manifest.json',data:encode({...manifest,complete:false})});saveBlob(await window.PLATUM_ARCHIVE.zip(entries),name);volume++;entries=[...baseEntries];size=metadata.data.length+readme.data.length;};
+      for(const file of files){
+        let blob;
+        try{
+          const response=await fetch('/api/files?id='+encodeURIComponent(file.id),{cache:'no-store',headers:{Authorization:(await headers()).Authorization},signal:AbortSignal.timeout(60000)});
+          if(!response.ok)throw new Error('File no longer accessible');
+          blob=await response.blob();if(blob.size!==Number(file.size_bytes))throw new Error('Incomplete file');
+        }catch{manifest.files.push({id:file.id,name:file.name,status:'NOT_INCLUDED'});continue;}
+        if(size+blob.size>64*1024*1024&&entries.length>baseEntries.length)await flush();
+        const name='attachments/'+file.id+'-'+window.PLATUM_ARCHIVE.safeName(file.name);
+        entries.push({name,data:blob});size+=blob.size;manifest.files.push({id:file.id,name:file.name,path:name,volume,status:'INCLUDED'});
+      }
+      const name=archivePrefix+'-part-'+volume+'.zip';manifest.volumes.push(name);manifest.complete=manifest.files.every(f=>f.status==='INCLUDED');
+      entries.push({name:'manifest.json',data:encode(manifest)});saveBlob(await window.PLATUM_ARCHIVE.zip(entries),name);
+      // A final manifest covers all volumes and records every unavailable attachment.
+      saveBlob(new Blob([JSON.stringify(manifest,null,2)],{type:'application/json'}),archivePrefix+'-manifest.json');
+      return manifest;
+    }
     if (format === 'json') return saveBlob(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }), filename + '.json');
     const tr = value => window.PLATUM_I18N.t(value);
     const lines = ['# ' + data.workspace.name, '', '' + tr('Exported') + ' ' + data.exported_at, '', '## ' + tr('Our agreement'), '', data.context?.objective || '',
@@ -254,5 +300,5 @@
       }),
     ];
   }
-  window.PLATUM_DATA = Object.freeze({ access, bundle, team, mutate, network, networkMutate, community, upload, download, exportWorkspace, rpc, queue, saveBlob });
+  window.PLATUM_DATA = Object.freeze({ access, bundle, team, mutate, personal, personalMutate, network, networkMutate, community, upload, download, exportWorkspace, rpc, queue, saveBlob });
 })();

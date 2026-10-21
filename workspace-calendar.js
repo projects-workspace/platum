@@ -6,32 +6,40 @@
     const domain = window.PLATUM_CALENDAR;
     const weekdays = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
     let month = '', selectedDay = '', workspaceId = '';
-    const data = () => state.data;
+    const data = () => state.data||{workspace_availability:[],calendar_events:[],calendar_versions:[],calendar_responses:[],tasks:[],work_milestones:[]};
+    const personal=()=>state.personal||{events:[],busy:[],people:[]};
     const zone = () => data()?.workspace_availability?.find(a => a.user_id === user())?.timezone || state.active?.settings?.timezone || 'UTC';
     const version = event => data().calendar_versions.find(v => v.id === event.current_version_id);
     const attrs = event => 'data-id="' + event.id + '" data-version="' + event.current_version_id + '"';
     const time = (instant, timezone = zone()) => i18n.dateTimeMarkup(instant, timezone);
     const zoneField = value => field(uiText('Time zone'),'timezone',value,{required:true,max:100,help:uiText('Use an IANA time zone, such as Europe/Prague, Europe/Kyiv or America/New_York. Times below use this zone.')});
+    const communityEntries=()=>(state.network?.community_events||[]).filter(e=>e.status==='scheduled').map(e=>{const v=(state.network.community_event_versions||[]).find(v=>v.id===e.current_version_id);return v?{...v,id:e.id,notes:v.description,community_event:true}:null;}).filter(Boolean);
     function calendarView() {
       const today = domain.localTime(new Date(),zone()).slice(0,10);
-      if (workspaceId !== state.active.id) { workspaceId = state.active.id; month = today.slice(0,7); selectedDay = today; }
+      if (workspaceId !== (state.active?.id||'personal')) { workspaceId = state.active?.id||'personal'; month = today.slice(0,7); selectedDay = today; }
       const events = data().calendar_events.filter(e=>!['cancelled','declined'].includes(e.status)).map(e=>({event:e,v:version(e)})).filter(x=>x.v);
+      const personalEntries=[...personal().events.filter(e=>e.status==='active'),...personal().busy.map(e=>({...e,title:i18n.t(({free:'Free time',busy:'Busy',unavailable:'Unavailable for work'})[e.availability]),redacted:true})),...communityEntries()];
+      const personalOnDay=day=>personalEntries.filter(e=>domain.localTime(e.starts_at,zone()).slice(0,10)<=day&&domain.localTime(new Date(new Date(e.ends_at).getTime()-1),zone()).slice(0,10)>=day);
       const tasks = data().tasks.filter(t=>t.due_at && !['completed','cancelled'].includes(t.status));
       const milestones = data().work_milestones.filter(m=>m.due_at&&!['completed','archived'].includes(m.status));
       const onDay = day => events.filter(x=>domain.localTime(x.v.starts_at,zone()).slice(0,10)<=day && domain.localTime(new Date(new Date(x.v.ends_at).getTime()-1),zone()).slice(0,10)>=day);
       const monthTitle = i18n.monthText(month);
-      return heading(uiText('Calendar'),uiText('Propose a time, agree it together, and keep the shared agenda.'),button('calendar-new',uiText('Propose an event'),'','ws-button ws-primary'))+
+      return heading(uiText('Calendar'),uiText('Propose a time, agree it together, and keep the shared agenda.'),(state.active?button('calendar-new',uiText('Propose an event'),'','ws-button ws-primary'):'')+(window.PLATUM_PERSONAL_UI&&state.personal?.available!==false?button('personal-event-new',uiText('Add calendar entry')):''))+
         '<div class="ws-calendar-toolbar"><div class="ws-actions">'+button('calendar-month',uiText('Previous month'),'data-delta="-1"')+'<h2 aria-live="polite">'+i18n.monthMarkup(month)+'</h2>'+button('calendar-month',uiText('Next month'),'data-delta="1"')+'</div><div class="ws-actions">'+button('calendar-today',uiText('Today'))+button('calendar-export',uiText('Download calendar'))+'</div></div>'+
-        '<p class="ws-meta"><span data-i18n-key="Displayed in">Displayed in</span> '+esc(zone())+'. '+link('availability',uiText('Set your availability and time zone'))+'</p>'+
+        '<p class="ws-meta"><span data-i18n-key="Displayed in">Displayed in</span> '+esc(zone())+'. '+(state.active?link('availability',uiText('Set your availability and time zone')):i18n.mark('Add free or unavailable periods to your personal schedule.'))+'</p>'+
         '<div class="ws-calendar-grid" aria-label="'+esc(monthTitle)+'" data-i18n-month-label="'+month+'">'+[1,2,3,4,5,6,0].map(i=>'<div class="ws-calendar-weekday" aria-label="'+i18n.t(weekdays[i])+'" data-i18n-aria-label="'+weekdays[i]+'">'+i18n.weekdayMarkup(i)+'</div>').join('')+
         domain.monthDays(month).map(day=>{
-          const count=onDay(day.date).length, due=tasks.filter(t=>t.due_at===day.date).length+milestones.filter(m=>m.due_at===day.date).length;
+          const count=onDay(day.date).length+personalOnDay(day.date).length, due=tasks.filter(t=>t.due_at===day.date).length+milestones.filter(m=>m.due_at===day.date).length;
           return '<button type="button" data-action="calendar-day" data-day="'+day.date+'" class="ws-calendar-day'+(!day.inMonth?' is-outside':'')+(day.date===selectedDay?' is-selected':'')+'" aria-pressed="'+(day.date===selectedDay)+'"'+(day.date===today?' aria-current="date"':'')+' aria-label="'+esc(i18n.t('{date}, {count} events, {due} task or milestone dates',{date:{__platumDate:day.date},count,due}))+'" data-i18n-aria-label="{date}, {count} events, {due} task or milestone dates" data-i18n-params="'+esc(JSON.stringify({date:{__platumDate:day.date},count,due}))+'"><span>'+day.number+'</span>'+(count?'<small>'+i18n.mark('{count} events','span',{count})+'</small>':'')+(due?'<small>'+i18n.mark('{count} due','span',{count:due})+'</small>':'')+'</button>';
         }).join('')+'</div><section class="ws-section"><h2>'+date(selectedDay)+'</h2>'+
-        (onDay(selectedDay).map(x=>eventRow(x.event)).join('')||'<p><span data-i18n-key="No events on this date.">No events on this date.</span></p>')+
+        (onDay(selectedDay).map(x=>eventRow(x.event)).join('')+personalOnDay(selectedDay).map(personalRow).join('')||'<p><span data-i18n-key="No events on this date.">No events on this date.</span></p>')+
         tasks.filter(t=>t.due_at===selectedDay).map(t=>'<article class="ws-work-row"><div><strong>'+esc(t.title)+'</strong><p><span data-i18n-key="Task due">Task due</span> '+i18n.mark(t.status.replaceAll('_',' '))+'</p></div>'+link('work',uiText('Open work'))+'</article>').join('')+
         milestones.filter(m=>m.due_at===selectedDay).map(m=>'<article class="ws-work-row"><div><strong>'+link('milestone',m.title,m.id)+'</strong><p><span data-i18n-key="Milestone target">Milestone target</span> '+i18n.mark(m.status.replaceAll('_',' '))+'</p></div></article>').join('')+'</section>'+
-        '<section class="ws-section"><h2><span data-i18n-key="All proposals and events">All proposals and events</span></h2>'+(data().calendar_events.length?data().calendar_events.slice().sort((a,b)=>(version(a)?.starts_at||'').localeCompare(version(b)?.starts_at||'')).map(eventRow).join(''):empty(uiText('Agree your first meeting'),uiText('Either side can suggest a date. The other side confirms or proposes a change.')))+'</section>';
+        '<section class="ws-section"><h2><span data-i18n-key="My schedule and shared availability">My schedule and shared availability</span></h2>'+personalEntries.slice().sort((a,b)=>a.starts_at.localeCompare(b.starts_at)).map(personalRow).join('')+'</section><section class="ws-section"><h2><span data-i18n-key="All proposals and events">All proposals and events</span></h2>'+(data().calendar_events.length?data().calendar_events.slice().sort((a,b)=>(version(a)?.starts_at||'').localeCompare(version(b)?.starts_at||'')).map(eventRow).join(''):empty(uiText('Agree your first meeting'),uiText('Either side can suggest a date. The other side confirms or proposes a change.')))+'</section>';
+    }
+    function personalRow(e){
+      const person=e.community_event?(state.network.communities.find(c=>c.id===e.community_id)?.name||i18n.t('Communities')):(personal().people.find(p=>p.user_id===e.user_id||p.user_id===e.owner_id)?.name||i18n.t('You'));
+      return '<article class="ws-work-row" data-personal-calendar><div><h3>'+(e.redacted?esc(e.title):link(e.community_event?'community-event':'personal-event',e.title,e.id))+'</h3><p>'+time(e.starts_at)+' — '+time(e.ends_at)+'</p><p>'+(person==='Participant'?i18n.mark('Participant'):esc(person))+'</p>'+(e.redacted?'<p class="ws-help">'+i18n.mark('Only availability is shared; personal details stay private.')+'</p>':'')+'</div></article>';
     }
     function eventRow(event) {
       const v=version(event); if(!v)return '';
@@ -43,7 +51,12 @@
       const canRespond=event.status==='proposed'&&v.proposed_side!==(operator()?'team':'client');
       const closed=['cancelled','completed'].includes(event.status);
       const responseForm=canRespond?'<form class="ws-form ws-reading" data-form="calendar-response" data-id="'+event.id+'" data-revision="'+event.revision+'" data-version="'+v.id+'">'+select(uiText('Your response'),'response',uiOptions([['confirmed',uiText('Confirm this proposal')],['declined',uiText('Decline and explain')]]),'confirmed')+field(uiText('Note'),'note','',{multiline:true,rows:2,max:5000,help:uiText('A note is required if you decline. Use Propose another time to suggest a different date.')})+formFoot(uiText('Send response'))+'</form>':'';
-      const available=data().workspace_availability.map(a=>'<li>'+person(a.user_id)+': '+i18n.mark(({within_hours:'within shared hours',outside_hours:'outside shared hours',unavailable:'marked unavailable',unknown:'no regular hours specified'})[domain.availabilityAt(a,v.starts_at,v.ends_at)])+'</li>').join('');
+      const periods=[...personal().busy,...personal().events.filter(e=>e.status==='active').map(e=>({...e,user_id:e.owner_id,availability:e.kind==='free'?'free':e.kind==='unavailable'?'unavailable':'busy'}))];
+      const available=(data().people||[]).map(member=>{
+        const a=data().workspace_availability.find(x=>x.user_id===member.user_id)||{timezone:zone(),weekly:[],unavailable:[]};
+        const status=domain.scheduleAt(a,v.starts_at,v.ends_at,periods.filter(p=>p.user_id===member.user_id));
+        return '<li>'+person(member.user_id)+': '+i18n.mark(({within_hours:'within shared hours',outside_hours:'outside shared hours',unavailable:'marked unavailable',unknown:'no regular hours specified',busy:'Busy',free:'Free time'})[status])+'</li>';
+      }).join('');
       return heading(v.title,uiText('Proposal {number} · {status}',{number:v.number,status:{__platumUi:event.status}}),(!closed?button('calendar-edit',uiText('Propose another time'),attrs(event)):'')+button('calendar-export',uiText('Download event'),attrs(event)))+
         '<article class="ws-reading"><p class="ws-calendar-time">'+time(v.starts_at)+' – '+time(v.ends_at)+'</p><p class="ws-meta"><span data-i18n-key="Proposed in">Proposed in</span> '+esc(v.timezone)+' '+i18n.mark('by')+' '+person(v.proposed_by)+'. '+i18n.mark('Confirmation is on behalf of the responding side.')+'</p>'+
         (v.location?'<h2><span data-i18n-key="Location or meeting link">Location or meeting link</span></h2>'+paragraphs(v.location):'')+'<h2><span data-i18n-key="Agenda">Agenda</span></h2>'+paragraphs(v.agenda||uiText('Add topics in the discussion below.'))+
@@ -108,7 +121,10 @@
       if(action==='calendar-remove-row'){control.closest('fieldset').remove();state.editorDirty=true;return true;}
       if(action==='calendar-export'){
         const events=control.dataset.id?data().calendar_events.filter(e=>e.id===control.dataset.id):data().calendar_events;
-        api.saveBlob(new Blob([domain.ics(events,data().calendar_versions,state.active.name)],{type:'text/calendar;charset=utf-8'}),'platum-calendar.ics');return true;
+        const extra=control.dataset.id?[]:[...personal().events.filter(e=>e.status==='active'),...personal().busy.map((e,i)=>({...e,id:'busy-'+i,title:i18n.t(({free:'Free time',busy:'Busy',unavailable:'Unavailable for work'})[e.availability])})),...communityEntries()];
+        const personalEvents=extra.map(e=>({id:e.id,current_version_id:e.id,revision:e.revision||1,status:'confirmed',availability:e.kind==='free'?'free':e.availability}));
+        const personalVersions=extra.map(e=>({id:e.id,title:e.title,agenda:e.notes||'',location:e.location||'',starts_at:e.starts_at,ends_at:e.ends_at,timezone:e.timezone||zone(),number:e.revision||1}));
+        api.saveBlob(new Blob([domain.ics([...events,...personalEvents],[...data().calendar_versions,...personalVersions],state.active?.name||'Platum')],{type:'text/calendar;charset=utf-8'}),'platum-calendar.ics');return true;
       }
       return false;
     }

@@ -11,7 +11,7 @@ const publicAssets=new Set([
   'index.html','client-space.html','prohor-intake.html',
   'client-space.css','agency-os.css','workspace-app.css','workspace-calendar.css','workspace-learning.css','workspace-progress.css','prohor-intake.css',
   'client-space.i18n.js','client-space.config.js','client-space-auth.js','cabinet-data.js','workspace-data.js',
-  'workspace-calendar-domain.js','workspace-calendar.js','workspace-learning.js','workspace-progress.js','workspace-network.js','workspace-app.js','client-space.js','agency-os.js','prohor-intake.js',
+  'workspace-calendar-domain.js','workspace-calendar.js','workspace-learning.js','workspace-progress.js','workspace-network.js','workspace-personal.js','workspace-archive.js','workspace-app.js','client-space.js','agency-os.js','prohor-intake.js',
 ]);
 const coverageFailures=new Set();
 let currentStep='launch';

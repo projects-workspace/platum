@@ -70,6 +70,9 @@
   const features = [window.PLATUM_CALENDAR_UI(featureContext),window.PLATUM_LEARNING_UI(featureContext),window.PLATUM_PROGRESS_UI(featureContext)];
   const networkFeature = window.PLATUM_NETWORK_UI?.(featureContext);
   if(networkFeature)features.push(networkFeature);
+  const personalFeature=window.PLATUM_PERSONAL_UI?.(featureContext);
+  if(personalFeature)features.push(personalFeature);
+  const globalView=()=>features.some(f=>f.isGlobalView?.(state.view));
 
   function notice(message, error = false) {
     const node = document.getElementById('ws-notice');
@@ -81,7 +84,7 @@
   function shell() {
     root.innerHTML = '<div class="ws-layout"><aside class="ws-sidebar" id="ws-sidebar"><a class="ws-brand" href="#home"><span class="brand-mark"><span data-i18n-key="P">P</span></span><strong><span data-i18n-key="Platum">Platum</span></strong></a>' +
       '<label class="ws-workspace-picker"><span data-i18n-key="Your workspace">Your workspace</span><select id="ws-workspace-select"></select></label><nav id="ws-nav" aria-label="Workspace navigation"></nav>' +
-      '<div class="ws-sidebar-bottom"><p><span data-i18n-key="One place for the work we do together.">One place for the work we do together.</span></p>' + button('export', uiText('Download shared history'), '', 'ws-button ws-sidebar-link') + '</div></aside>' +
+      '<div class="ws-sidebar-bottom"><p><span data-i18n-key="One place for the work we do together.">One place for the work we do together.</span></p>' + button('export', uiText('Download shared history'), '', 'ws-button ws-sidebar-link')+button('export',uiText('Export with attachments'),'data-format="archive"','ws-button ws-sidebar-link') + '</div></aside>' +
       '<div class="ws-main"><header class="ws-header">' + button('menu', uiText('Menu'), 'aria-controls="ws-sidebar" aria-expanded="false"', 'ws-button ws-mobile-menu') +
       '<span id="ws-location"></span><button type="button" class="ws-button ws-header-refresh" data-action="refresh" aria-label="Refresh"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 8a8 8 0 1 0 1 7M19 3v5h-5"/></svg><span><span data-i18n-key="Refresh">Refresh</span></span></button><div id="ws-account"></div></header><div id="ws-notice" class="ws-notice" role="status" aria-live="polite" hidden></div><main id="ws-content"></main></div></div>';
     const account = document.querySelector('.topbar__actions');
@@ -91,8 +94,8 @@
     i18n.apply(root);
   }
   function navigation() {
-    root.querySelector('[data-action="export"]').hidden = Boolean(!state.active || networkFeature?.isGlobalView(state.view));
-    document.querySelector('.ws-workspace-picker').hidden=Boolean(networkFeature?.isGlobalView(state.view));
+    for(const control of root.querySelectorAll('[data-action="export"]'))control.hidden=Boolean(!state.active||globalView()||control.dataset.format==='archive'&&state.personal?.available===false);
+    document.querySelector('.ws-workspace-picker').hidden=Boolean(globalView());
     document.getElementById('ws-workspace-select').innerHTML = state.workspaces.map(w => '<option value="' + w.id + '"' + (w.id === state.active?.id ? ' selected' : '') + '>' + escape(w.name) + '</option>').join('') || '<option data-i18n-key="No workspace yet">No workspace yet</option>';
     const modules = state.active ? state.active.settings?.modules || Object.keys(labels) : [];
     let items = modules.filter(k => labels[k]).map(k => '<a href="#' + k + '" class="' + (state.view === k || state.view === 'material' && k === 'materials' || state.view === 'request' && k === 'work' || state.view === 'form' && k === 'forms' || ['event','availability'].includes(state.view) && k === 'calendar' || state.view==='lesson' && k==='learning' || state.view==='inspiration-item' && k==='inspiration' || ['report','milestone'].includes(state.view)&&k==='reports' ? 'is-current' : '') + '">' +
@@ -104,10 +107,11 @@
     if (state.capabilities.canCreate) items += '<a href="#new-workspace"><span data-i18n-key="Create workspace">Create workspace</span></a>';
     if(networkFeature)items='<a href="#communities"'+(state.view.startsWith('communit')?' class="is-current"':'')+' data-i18n-key="Communities">Communities</a>'+
       (operator()?'<a href="#contacts"'+(['contacts','contact'].includes(state.view)?' class="is-current"':'')+' data-i18n-key="Contact network">Contact network</a>':'')+(modules.length?'<div class="ws-nav-divider"></div>':'')+items;
+    if(personalFeature&&state.personal?.available!==false)items='<a href="#personal" data-i18n-key="My cabinet">My cabinet</a><a href="#my-contacts" data-i18n-key="My contacts">My contacts</a>'+(!state.active?'<a href="#calendar" data-i18n-key="Calendar">Calendar</a>':'')+items;
     document.getElementById('ws-nav').innerHTML = items;
-    const networkLocation=networkFeature?.location();
+    const networkLocation=personalFeature?.isGlobalView(state.view)?i18n.t('My cabinet'):networkFeature?.location();
     document.getElementById('ws-location').textContent = networkLocation || (state.active ? state.active.name + ' / ' + i18n.t(operator() ? 'Team workspace' : 'Shared workspace') : i18n.t('Your workspaces'));
-    root.dataset.accent = ['forest','slate','clay'].includes(state.active?.settings?.accent) ? state.active.settings.accent : 'forest';
+    root.dataset.accent = globalView()?'forest':['forest','slate','clay'].includes(state.active?.settings?.accent) ? state.active.settings.accent : 'forest';
     document.title = networkLocation ? networkLocation+' — Platum' : state.active ? state.active.name + ' — Platum' : 'Platum';
     i18n.apply(root);
   }
@@ -342,9 +346,10 @@
     navigation();
     const content=document.getElementById('ws-content');
     if(state.loading){content.innerHTML='<div class="ws-loading" role="status"><span data-i18n-key="Opening your workspace…">Opening your workspace…</span></div>';i18n.apply(content);return;}
+    if(personalFeature?.isGlobalView(state.view)&&state.personal?.available===false){content.innerHTML=heading(uiText('Personal features are being prepared.'))+empty(uiText('Refresh later or contact the team.'))+button('refresh',uiText('Try again'));i18n.apply(content);return;}
     if(state.editor){content.innerHTML=editorView();i18n.apply(content);content.querySelector('h1')?.focus({preventScroll:true});return;}
     if(state.view==='new-workspace'&&state.capabilities.canCreate){state.editor={type:'workspace'};content.innerHTML=editorView();i18n.apply(content);return;}
-    if((!state.active||!state.data)&&!networkFeature?.isGlobalView(state.view)){content.innerHTML=heading(uiText('Your workspaces'),uiText('Your account is signed in.'))+
+    if((!state.active||!state.data)&&!globalView()){content.innerHTML=heading(uiText('Your workspaces'),uiText('Your account is signed in.'))+
       empty(uiText('No workspace access yet'),state.capabilities.canCreate?'Create your first shared workspace to begin.':'Ask your team to invite this email. An invitation may have expired or been revoked.')+
       (state.capabilities.canCreate?button('new-workspace',uiText('Create workspace'),'','ws-button ws-primary'):'')+button('refresh',uiText('Check again'))+(networkFeature?link('communities',uiText('Open communities')):'');i18n.apply(content);return;}
     if(state.view==='settings'&&operator()){state.editor={type:'settings'};content.innerHTML=editorView();i18n.apply(content);return;}
@@ -392,10 +397,12 @@
       state.active=state.workspaces.find(w=>w.id===preferred)||state.workspaces[0]||null;
       if(state.active){const url=new URL(location.href);url.searchParams.set('workspace',state.active.id);history.replaceState({},'',url);}
       if(preferred&&!state.workspaces.some(w=>w.id===preferred))notice('The selected workspace is no longer available to your account.',true);
-      const [data,network]=await Promise.all([state.active?api.bundle(state.active.id,state.controller.signal):null,api.network?api.network(state.controller.signal):null]);
+      const [data,network,personal]=await Promise.all([state.active?api.bundle(state.active.id,state.controller.signal):null,api.network?api.network(state.controller.signal):null,api.personal?api.personal(state.controller.signal):null]);
       if(generation!==state.generation)return;
       state.data=data;
       state.network=network;
+      state.personal=personal;
+      if(personalFeature&&personal?.available!==false&&!state.active&&state.view==='home')state.view='personal';
       state.loading=false;render();
     }catch(error){
       if(error.name==='AbortError'||generation!==state.generation)return;
@@ -453,7 +460,7 @@
       for(const feature of features){const command=feature.form?.(form,data,value,submitter);if(command){action=command.action;payload=command.payload;featureCommand=command;break;}}
       if(!action)throw new Error('This form is not available.');
       result=featureCommand?.network
-        ? await api[featureCommand.service?'community':'networkMutate'](action,featureCommand.scope,payload,operationFor(form,payload))
+        ? await api[featureCommand.personal?'personalMutate':featureCommand.service?'community':'networkMutate'](action,featureCommand.scope,payload,operationFor(form,payload))
         : await api.mutate(action,state.active.id,payload,operationFor(form,payload));
       inlineDrafts.delete(draftKey(form));
       state.editorDirty=false;state.editor=null;
@@ -510,7 +517,7 @@
     try {
       if(action==='open-inbox-item'){if(!discard())return;state.view=control.dataset.view;state.detail=id;state.version=null;history.replaceState({},'',location.pathname+location.search+'#'+state.view+'/'+id);await refresh(control.dataset.workspace);return;}
       if(action==='download'){await api.download(d.workspace_files.find(f=>f.id===id));return;}
-      if(action==='export'){if(!state.active){notice('Open a workspace before downloading its shared history.',true);return;}await api.exportWorkspace(state.active.id,control.dataset.format||'markdown');notice('Shared history downloaded. Files can be downloaded separately.');return;}
+      if(action==='export'){if(!state.active){notice('Open a workspace before downloading its shared history.',true);return;}const result=await api.exportWorkspace(state.active.id,control.dataset.format||'markdown');notice(control.dataset.format==='archive'?result.complete?'Archive prepared. Keep all volumes and the manifest.':'Archive is incomplete. Check NOT_INCLUDED files in the manifest.':'Shared history downloaded. Files can be downloaded separately.',control.dataset.format==='archive'&&!result.complete);return;}
       let command,payload,featureCommand;
       for(const feature of features){const next=feature.command?.(action,control);if(next){command=next.action;payload=next.payload;featureCommand=next;break;}}
       if(action==='complete-task'){const t=d.tasks.find(t=>t.id===id);command='task.complete';payload={id,revision:t.revision,status:t.status==='completed'?'open':'completed'};}
@@ -522,10 +529,13 @@
       if(action==='read-updates'){command='updates.read';payload={};}
       if(['revoke-member','revoke-invite','resend-invite'].includes(action)){
         if(action!=='resend-invite'&&!window.confirm(i18n.t('Remove this access to the current workspace?')))return;
-        const response=await api.team(action==='revoke-member'?'revoke_member':action==='revoke-invite'?'revoke_invite':'resend_invite',state.active.id,{id},control._operation||=uuid());
+        const target=state.data.people.find(p=>p.user_id===id);
+        const exportOffered=action==='revoke-member'&&target?.role==='client'?window.confirm(i18n.t('Has the client been offered an export with attachments before access closes?')):false;
+        if(action==='revoke-member'&&target?.role==='client'&&!exportOffered)return;
+        const response=await api.team(action==='revoke-member'?'revoke_member':action==='revoke-invite'?'revoke_invite':'resend_invite',state.active.id,{id,...(exportOffered?{export_offered:true}:{})},control._operation||=uuid());
         await refresh();notice(action==='resend-invite'?(response.delivery==='sent'?'Invitation sent.':uiText('Delivery {status}. Check the invitation before trying again.',{status:{__platumUi:response.delivery}})):'Access updated.',action==='resend-invite'&&response.delivery!=='sent');return;
       }
-      if(command){const result=featureCommand?.network?await api[featureCommand.service?'community':'networkMutate'](command,featureCommand.scope,payload,control._operation||=uuid()):await api.mutate(command,state.active.id,payload,control._operation||=uuid());for(const feature of features)feature.afterCommand?.(action,result);await refresh();notice(result?.delivery==='sent'?'Invitation sent.':result?.delivery?uiText('Delivery {status}. Check the invitation before trying again.',{status:{__platumUi:result.delivery}}):'Saved.',Boolean(result?.delivery&&result.delivery!=='sent'));}
+      if(command){const result=featureCommand?.network?await api[featureCommand.personal?'personalMutate':featureCommand.service?'community':'networkMutate'](command,featureCommand.scope,payload,control._operation||=uuid()):await api.mutate(command,state.active.id,payload,control._operation||=uuid());for(const feature of features)feature.afterCommand?.(action,result);await refresh();notice(result?.delivery==='sent'?'Invitation sent.':result?.delivery?uiText('Delivery {status}. Check the invitation before trying again.',{status:{__platumUi:result.delivery}}):'Saved.',Boolean(result?.delivery&&result.delivery!=='sent'));}
     }catch(error){notice(error.message,true);}
     finally{if(writing)pendingSaves--;control._busy=false;control.removeAttribute('aria-busy');control.disabled=false;}
   }
@@ -551,6 +561,6 @@
     await refresh(requestedWorkspace);
     initialized=true;
   }
-  i18n.subscribe(() => { if (initialized) { i18n.apply(root); const locationNode = document.getElementById('ws-location'); if (locationNode) locationNode.textContent = networkFeature?.location() || (state.active ? state.active.name + ' / ' + i18n.t(operator() ? 'Team workspace' : 'Shared workspace') : i18n.t('Your workspaces')); } });
+  i18n.subscribe(() => { if (initialized) { i18n.apply(root); const locationNode = document.getElementById('ws-location'); if (locationNode) locationNode.textContent = (personalFeature?.isGlobalView(state.view)?i18n.t('My cabinet'):networkFeature?.location()) || (state.active ? state.active.name + ' / ' + i18n.t(operator() ? 'Team workspace' : 'Shared workspace') : i18n.t('Your workspaces')); } });
   init();
 })();
