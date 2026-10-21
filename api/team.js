@@ -4,6 +4,7 @@ const { randomUUID } = require('node:crypto');
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const ACTIONS = new Set(['create_workspace', 'invite', 'resend_invite', 'revoke_invite', 'revoke_member']);
 const safeErrors = {
+  EXPORT_OFFER_REQUIRED: 'Offer the client an export with attachments before closing access.',
   FORBIDDEN: 'You do not have permission to manage this workspace.',
   FORBIDDEN_ROLE: 'Only a workspace owner can manage administrators.',
   PLATFORM_ROLE_MEMBER: 'Platform owners and administrators cannot be removed from a workspace here.',
@@ -113,7 +114,7 @@ function createHandler(env = process.env, fetcher = globalThis.fetch) {
       });
       if (action === 'create_workspace') return send(201, { workspace: await command('workspace.create', { name: payload.name.trim() }, operation) });
       if (action === 'revoke_invite') return send(200, await command('invitation.revoke', { id: payload.id }, operation));
-      if (action === 'revoke_member') return send(200, await command('member.revoke', { id: payload.id }, operation));
+      if (action === 'revoke_member') return send(200, await command('member.revoke', { id: payload.id, export_offered: payload.export_offered===true }, operation));
       let invitation = await command(action === 'invite' ? 'invitation.create' : 'invitation.resend',
         action === 'invite' ? { email: payload.email.trim().toLowerCase(), role: payload.role } : { id: payload.id }, operation);
       const claimed = await command('invitation.claim_delivery', { id: invitation.id });

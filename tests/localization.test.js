@@ -80,7 +80,7 @@ function uiSourceKeys(code) {
 }
 test('marked HTML and explicit UI tokens have Ukrainian catalog coverage',()=>{
   const {locale}=runtime();
-  for(const filename of ['client-space.html','prohor-intake.html','index.html','workspace-app.js','workspace-calendar.js','workspace-learning.js','workspace-progress.js','workspace-network.js','client-space.js','agency-os.js']) {
+  for(const filename of ['client-space.html','prohor-intake.html','index.html','workspace-app.js','workspace-calendar.js','workspace-learning.js','workspace-progress.js','workspace-network.js','workspace-personal.js','client-space.js','agency-os.js']) {
     const code=fs.readFileSync(path.join(root,filename),'utf8');
     for(const key of uiSourceKeys(code))assert.equal(locale.has(key),true,filename+': missing dynamic UI key '+key);
     for(const expression of [/data-i18n-(?:key|placeholder|aria-label|title)="([^"$<>]+)"/g,/(?:uiText|i18n\.mark|i18n\.t|ui)\('((?:[^'\\]|\\.)*)'/g]) {

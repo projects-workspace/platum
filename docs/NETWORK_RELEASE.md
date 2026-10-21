@@ -4,17 +4,46 @@ The approved first implementation extends the existing Platum application. Deliv
 
 Production delivery was completed on 2026-10-20. The steps below record its order and must not be replayed on the existing production project. See `PROJECT_STATE.md` section 12 for the live verification and the manual repair of the predecessor's missing migration-history row.
 
-## Agency publishing and voluntary participation — merged source, production pending
+## Personal privacy and account cabinet — current source package
+
+The owner accepted the initial personal privacy/access model and authorized implementation after PR #2. Source branch: `codex/personal-privacy`, based on `main` `c46a9ac`. `PROJECT_STATE.md` section 14 is the current implementation checkpoint. This section supersedes the old PR #2-only publication prompt; previous procedures below remain historical or describe the predecessor.
+
+### Privacy and ownership contract
+
+- One existing Auth account owns its personal contact book and calendar entries. No personal/client workspace is created automatically; existing workspaces remain work contexts. Unassigned confirmed accounts can use their own cabinet without gaining workspace access.
+- Raw personal contacts/calendar rows are owner-readable only, with forced RLS and no direct browser writes. Recipient contact reads use an RPC projection: only chosen fields are returned; named users or the selected workspace's agency operators may receive a separate edit grant. Global platform roles do not bypass these restrictions. Edit rights cover only granted fields, and cached replies are reprojected against current permissions.
+- Sharing the whole book means the current active contacts only, excluding hidden/archived and future contacts. It does not change ownership. A contact can remain unregistered. Neither automatic merge nor personal-contact/account matching is implemented. Agency contact links require deliberate operator verification; this attests a human check, not independently proven identity.
+- Busy/free/unavailable slots are visible to current explicit workspace coworkers. Private entry IDs, titles, notes, locations and original timezones are absent from that projection. Full shared-event details require named participants with current coworker access. Community-only membership does not disclose personal availability. Opt-in community names use chosen profile aliases rather than private Auth names.
+- Applications start disabled for existing communities. An application grants no access; an existing manager approves/rejects it. Recommendations and invitations retain manager control. Leaving/revoking community membership does not change independent workspace roles. Ending work does not delete personal books or revoke unrelated community membership.
+- Client access closure requires an operator acknowledgement that an export was offered. This is not a download receipt or a new automatic notification. Exports preserve the authorized collaboration projection and freshly checked file bytes. Keep every ZIP volume plus the final manifest; `NOT_INCLUDED` is explicit incomplete delivery. External links stay links. Previously closed access cannot be restored through export, and bytes already downloaded cannot be recalled.
+
+### Ordered migration and publication
+
+1. Confirm that the reviewed privacy source is on the branch/revision approved for release. If it is still only in an unmerged PR, obtain the intended source through the agreed review process; do not deploy an unrelated `main` revision.
+2. Read the assigned Platum migration history. If still missing, apply `20261021120000_community_participation.sql`, then `20261021160000_personal_privacy.sql`, through the normal transactional migration process. Do not replay the 2026-10-17 founder/contact migrations, the one-time history repair or cleanup. The new privacy migration creates empty tables/functions/policies and preserves existing records; it seeds no person, membership, content or invite.
+3. Verify forced RLS/owner-only raw reads, authenticated projection/mutation grants, service-only review/offboarding commands and the export wrapper. No new provider, credentials or integration is required. Publication must follow schema readiness: the new frontend calls `platum_personal_data`/`platum_personal_mutate` and uses new static assets.
+4. Publish the matching source/API to the existing Vercel target and verify exact commit/deployment and `https://client-cabinet.vercel.app`. Confirm `workspace-personal.js` and `workspace-archive.js` are served, while private sources, migrations and state documents remain unavailable.
+5. With authorized test sessions verify default-private books even for founders, field-limited read/edit/revoke and cached retries, private/busy/shared calendar views, application approval/exit, an attachment archive and client access closure. Explicitly report unavailable hosted/Auth/mail/Storage journeys. Do not create/invite real people or remove real memberships as an incidental smoke check.
+
+### Короткий промпт для Codex партнера
+
+> Онови Platum до погодженого source з особистою приватністю (`codex/personal-privacy`, або відповідного `main` після merge). Прочитай `PROJECT_STATE.md` §14 і `docs/NETWORK_RELEASE.md`. У призначеному Supabase звір історію; застосуй лише відсутні нові міграції у порядку `20261021120000` → `20261021160000`. Старі міграції, repair і cleanup не повторюй. Після підтвердження схеми опублікуй matching source/API у наявний Vercel на `https://client-cabinet.vercel.app`. Перевір приватні контакти/поля, busy-only календар, заявки, експорт із вкладеннями та відкликання на дозволених тестових сесіях. Реальних акаунтів, запрошень чи видалень побічно не роби. Онови `PROJECT_STATE.md` з SHA, міграціями, deployment і PASS/NOT_RUN.
+
+### Additional local checks
+
+    node --test tests/archive.test.js tests/export.test.js
+    PLATUM_PGLITE_MODULE=/absolute/local/path/to/@electric-sql/pglite node tests/personal-database.cjs
+    PLATUM_PGLITE_MODULE=/absolute/local/path/to/@electric-sql/pglite node tests/personal-upgrade.cjs
+
+The expanded existing `tests/network.browser.cjs` exercises frontend → real local community/file handlers → PostgreSQL/RLS, with synthetic Auth, email and Storage bytes. ZIP interoperability/CRC is also checked with a separate reader. This does not establish production email delivery or hosted authorization acceptance.
+
+## Agency publishing and voluntary participation — merged predecessor
 
 The user approved only planning steps 1–2 on 2026-10-21: reconcile the current state and refine community behavior. Contact sharing, personal privacy rules, admission/offboarding redesign and integrations remain outside this change. The new source is based on `origin/main` checkpoint `1166851`, which records the completed first release.
 
 Review: [merged PR #2](https://github.com/projects-workspace/platum/pull/2), merged into `main` as `31c03c3` on 2026-10-21 after explicit owner authorization. Implementation `bae4d4d`, reviewed head `b7ce5ec` and main merge checks passed. Production publication remains a separate partner action. A post-merge GET still serves the prior network asset; the new participation-table REST endpoint returns `404 / PGRST205`.
 
-### Короткий промпт для Codex партнера
-
-Ця редакція стосується пакета PR #2. Після наступних робіт перед фінальною передачею звірити перелік нових міграцій.
-
-> Онови Platum з актуального `origin/main`; PR #2 вже змерджено. Прочитай `PROJECT_STATE.md`, секцію 13, та `docs/NETWORK_RELEASE.md`. У призначеному Platum Supabase звір історію міграцій і застосуй лише відсутню `20261021120000_community_participation.sql`; не повторюй старі міграції, repair чи cleanup. Після підтвердження схеми опублікуй відповідний source у наявний Vercel-проєкт на `https://client-cabinet.vercel.app`. Звір commit, deployment і canonical URL; перевір менеджерські публікації, добровільні відповіді та обмеження доступу на дозволених тестових сесіях. Не створюй реальних акаунтів чи запрошень побічно. Онови `PROJECT_STATE.md`; вкажи SHA, міграцію, deployment і результати PASS/NOT_RUN.
+The current partner prompt and full pending migration order are in the personal-privacy section above.
 
 ### Access contract
 
@@ -41,7 +70,7 @@ The 2026-10-21 task prepares source and handoff; it does not apply the new produ
 
 Review: [draft PR #1](https://github.com/projects-workspace/platum/pull/1), branch `codex/community-contacts`, based on `codex/platform-founder-roles`. Both source layers must be included when the partner publishes; this PR does not merge the predecessor.
 
-## Included behavior
+## First release behavior — historical, 2026-10-20
 
 - Contacts belong to a workspace and are readable/writable only by its operators. A contact can exist without an account. Overlapping categories, relationship context, a responsible operator, next action/date, optional existing member/task links, search, history and archive/restore are included. Linking an account grants no access. Client exports do not include contacts.
 - Communities have independent manager/member memberships. Creating a community enrolls only its creator as manager; existing platform operators retain their existing platform authority. No community or account is seeded by the migration.

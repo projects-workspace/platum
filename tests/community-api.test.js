@@ -57,3 +57,11 @@ test('delivery failure or uncertainty is persisted and visible without leaking p
   const {res,calls}=await invoke(opts);assert.equal(res.body.delivery,expected);assert.equal(calls.find(c=>c.p?.action==='invitation.delivery').p.payload.status,expected);assert.equal(JSON.stringify(res.body).includes('private transport'),false);
  }
 });
+
+test('membership applications use manager authorization and never trigger email delivery',async()=>{
+ for(const action of ['application.approve','application.reject']){
+  const {res,calls}=await invoke({body:{action,community_id:community,operation_id:op,payload:{id:invitation}}});assert.equal(res.statusCode,200);
+  const command=calls.find(c=>c.url.pathname.includes('/rpc/'));assert.equal(command.p.actor_id,user);assert.equal(command.p.action,action);assert.equal(calls.some(c=>c.url.pathname==='/auth/v1/invite'),false);
+  const denied=await invoke({denied:true,body:{action,community_id:community,operation_id:op,payload:{id:invitation}}});assert.equal(denied.res.statusCode,403);
+ }
+});

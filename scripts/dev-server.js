@@ -15,7 +15,7 @@ if (!['127.0.0.1','localhost'].includes(backend.hostname) || !process.env.PLATUM
   throw new Error('This server requires explicit local Supabase configuration. Remote projects are refused.');
 }
 const publicFiles = new Set(['index.html','client-space.html','client-space.css','client-space.js','client-space-auth.js','client-space.i18n.js',
-  'cabinet-data.js','agency-os.js','agency-os.css','workspace-app.js','workspace-app.css','workspace-data.js','workspace-network.js','workspace-calendar.js','workspace-calendar-domain.js','workspace-calendar.css','workspace-learning.js','workspace-learning.css','workspace-progress.js','workspace-progress.css','prohor-intake.html','prohor-intake.js','prohor-intake.css']);
+  'cabinet-data.js','agency-os.js','agency-os.css','workspace-app.js','workspace-app.css','workspace-data.js','workspace-network.js','workspace-personal.js','workspace-archive.js','workspace-calendar.js','workspace-calendar-domain.js','workspace-calendar.css','workspace-learning.js','workspace-learning.css','workspace-progress.js','workspace-progress.css','prohor-intake.html','prohor-intake.js','prohor-intake.css']);
 const server = http.createServer(async (req,res) => {
   const url = new URL(req.url, 'http://' + host + ':' + port);
   res.setHeader('Cache-Control','no-store');

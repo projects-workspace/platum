@@ -32,6 +32,8 @@ npm --prefix bot test
 
 For the approved contacts/closed-community extension, its schema prerequisites, local PostgreSQL/browser checks and partner release handoff are in [Contacts and community delivery](docs/NETWORK_RELEASE.md). Source implementation does not establish a hosted release.
 
+The accepted personal privacy/access extension reuses the same account/workspace shell and calendar. Its source, ownership/field-sharing contract, attachment archive and ordered pending migrations are described in PROJECT_STATE.md section 14 and the same release guide. No personal workspace, external integration or provider is automatically created.
+
 The original deterministic mock remains a legacy UI fixture:
 
 ```sh

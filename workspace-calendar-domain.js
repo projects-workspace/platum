@@ -68,7 +68,7 @@
         'DTSTAMP:' + stamp(generatedAt), 'DTSTART:' + stamp(v.starts_at), 'DTEND:' + stamp(v.ends_at),
         'SUMMARY:' + escapeText(v.title), 'DESCRIPTION:' + escapeText(v.agenda + '\nProposal ' + v.number + ' · ' + event.status + '\nOriginal time zone: ' + v.timezone),
         'LOCATION:' + escapeText(v.location), 'STATUS:' + (['cancelled', 'declined'].includes(event.status) ? 'CANCELLED' : event.status === 'proposed' ? 'TENTATIVE' : 'CONFIRMED'),
-        'TRANSP:' + (['cancelled', 'declined'].includes(event.status) ? 'TRANSPARENT' : 'OPAQUE'), 'END:VEVENT');
+        'TRANSP:' + (['cancelled', 'declined'].includes(event.status)||event.availability==='free' ? 'TRANSPARENT' : 'OPAQUE'), 'END:VEVENT');
     }
     lines.push('END:VCALENDAR');
     return lines.map(fold).join('\r\n') + '\r\n';
@@ -81,5 +81,13 @@
     const day = new Date(first + 'T12:00:00Z').getUTCDay();
     return first === last && availability.weekly.some(slot => Number(slot.day) === day && start.slice(11) >= slot.start && end.slice(11) <= slot.end) ? 'within_hours' : 'outside_hours';
   }
-  return Object.freeze({ localTime, toInstant, monthDays, shiftMonth, ics, availabilityAt });
+  function scheduleAt(availability,startsAt,endsAt,periods=[]){
+    const start=Date.parse(startsAt),end=Date.parse(endsAt);
+    const overlap=periods.filter(p=>Date.parse(p.starts_at)<end&&Date.parse(p.ends_at)>start);
+    if(overlap.some(p=>p.availability==='unavailable'))return 'unavailable';
+    if(overlap.some(p=>p.availability==='busy'))return 'busy';
+    if(overlap.some(p=>p.availability==='free'&&Date.parse(p.starts_at)<=start&&Date.parse(p.ends_at)>=end))return 'free';
+    return availabilityAt(availability,startsAt,endsAt);
+  }
+  return Object.freeze({ localTime, toInstant, monthDays, shiftMonth, ics, availabilityAt, scheduleAt });
 });

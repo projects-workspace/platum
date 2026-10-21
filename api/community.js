@@ -1,7 +1,7 @@
 'use strict';
 const {randomUUID} = require('node:crypto');
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const ACTIONS = new Set(['invitation.create','invitation.resend','invitation.revoke','member.revoke','referral.reject']);
+const ACTIONS = new Set(['invitation.create','invitation.resend','invitation.revoke','member.revoke','referral.reject','application.approve','application.reject']);
 const messages = {
   FORBIDDEN:'Only community managers can manage invitations and access.',
   INVITATION_UNAVAILABLE:'This invitation is no longer available.',
