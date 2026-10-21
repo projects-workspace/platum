@@ -18,6 +18,7 @@
   };
   const state = { workspaces: [], active: null, data: null, network: null, editor: null, capabilities: { canCreate: false }, view: 'home', detail: null, version: null, loading: false, generation: 0, controller: null };
   const inlineDrafts = new Map();
+  const navExpanded = new Map();
   let pendingSaves = 0;
   let initialized = false;
   const draftKey = form => [state.active?.id,form.dataset.community,form.dataset.form,form.dataset.id,form.dataset.version,form.dataset.block].join(':');
@@ -82,8 +83,8 @@
     clearTimeout(notice.timer); notice.timer = setTimeout(() => { node.hidden = true; }, error ? 12000 : 6000);
   }
   function shell() {
-    root.innerHTML = '<div class="ws-layout"><aside class="ws-sidebar" id="ws-sidebar"><a class="ws-brand" href="#home"><span class="brand-mark"><span data-i18n-key="P">P</span></span><strong><span data-i18n-key="Platum">Platum</span></strong></a>' +
-      '<label class="ws-workspace-picker"><span data-i18n-key="Your workspace">Your workspace</span><select id="ws-workspace-select"></select></label><nav id="ws-nav" aria-label="Workspace navigation"></nav>' +
+    root.innerHTML = '<div class="ws-layout"><aside class="ws-sidebar" id="ws-sidebar"><div class="ws-sidebar-head"><a class="ws-brand" href="#home"><span class="brand-mark"><span data-i18n-key="P">P</span></span><strong><span data-i18n-key="Platum">Platum</span></strong></a><button type="button" class="ws-button ws-sidebar-close" data-action="menu-close" aria-label="Close menu" data-i18n-aria-label="Close menu" aria-controls="ws-sidebar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div>' +
+      '<nav id="ws-account-nav" aria-label="Personal navigation" data-i18n-aria-label="Personal navigation"></nav><label class="ws-workspace-picker"><span data-i18n-key="Current collaboration">Current collaboration</span><select id="ws-workspace-select"></select></label><nav id="ws-nav" aria-label="Project navigation" data-i18n-aria-label="Project navigation"></nav>' +
       '<div class="ws-sidebar-bottom"><p><span data-i18n-key="One place for the work we do together.">One place for the work we do together.</span></p>' + button('export', uiText('Download shared history'), '', 'ws-button ws-sidebar-link')+button('export',uiText('Export with attachments'),'data-format="archive"','ws-button ws-sidebar-link') + '</div></aside>' +
       '<div class="ws-main"><header class="ws-header">' + button('menu', uiText('Menu'), 'aria-controls="ws-sidebar" aria-expanded="false"', 'ws-button ws-mobile-menu') +
       '<span id="ws-location"></span><button type="button" class="ws-button ws-header-refresh" data-action="refresh" aria-label="Refresh"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 8a8 8 0 1 0 1 7M19 3v5h-5"/></svg><span><span data-i18n-key="Refresh">Refresh</span></span></button><div id="ws-account"></div></header><div id="ws-notice" class="ws-notice" role="status" aria-live="polite" hidden></div><main id="ws-content"></main></div></div>';
@@ -97,18 +98,15 @@
     for(const control of root.querySelectorAll('[data-action="export"]'))control.hidden=Boolean(!state.active||globalView()||control.dataset.format==='archive'&&state.personal?.available===false);
     document.querySelector('.ws-workspace-picker').hidden=Boolean(globalView());
     document.getElementById('ws-workspace-select').innerHTML = state.workspaces.map(w => '<option value="' + w.id + '"' + (w.id === state.active?.id ? ' selected' : '') + '>' + escape(w.name) + '</option>').join('') || '<option data-i18n-key="No workspace yet">No workspace yet</option>';
-    const modules = state.active ? state.active.settings?.modules || Object.keys(labels) : [];
-    let items = modules.filter(k => labels[k]).map(k => '<a href="#' + k + '" class="' + (state.view === k || state.view === 'material' && k === 'materials' || state.view === 'request' && k === 'work' || state.view === 'form' && k === 'forms' || ['event','availability'].includes(state.view) && k === 'calendar' || state.view==='lesson' && k==='learning' || state.view==='inspiration-item' && k==='inspiration' || ['report','milestone'].includes(state.view)&&k==='reports' ? 'is-current' : '') + '">' +
-      '<svg viewBox="0 0 24 24" aria-hidden="true">' + icons[k] + '</svg><span>' + i18n.mark(labels[k]) + '</span></a>').join('');
-    if (state.workspaces.some(w => ['owner','admin','team'].includes(w.role))) items += '<div class="ws-nav-divider"></div><a href="#team"' + (state.view === 'team' ? ' class="is-current"' : '') + ' data-i18n-key="Team inbox">Team inbox</a>';
-    if (operator()) items += '<a href="#settings"' + (state.view === 'settings' ? ' class="is-current"' : '') + ' data-i18n-key="Workspace settings">Workspace settings</a>';
-    if (operator()) items += '<a href="#templates"' + (state.view === 'templates' ? ' class="is-current"' : '') + ' data-i18n-key="Templates">Templates</a>';
-    if (manager()) items += '<a href="#members"' + (state.view === 'members' ? ' class="is-current"' : '') + ' data-i18n-key="People & access">People & access</a>';
-    if (state.capabilities.canCreate) items += '<a href="#new-workspace"><span data-i18n-key="Create workspace">Create workspace</span></a>';
-    if(networkFeature)items='<a href="#communities"'+(state.view.startsWith('communit')?' class="is-current"':'')+' data-i18n-key="Communities">Communities</a>'+
-      (operator()?'<a href="#contacts"'+(['contacts','contact'].includes(state.view)?' class="is-current"':'')+' data-i18n-key="Contact network">Contact network</a>':'')+(modules.length?'<div class="ws-nav-divider"></div>':'')+items;
-    if(personalFeature&&state.personal?.available!==false)items='<a href="#personal" data-i18n-key="My cabinet">My cabinet</a><a href="#my-contacts" data-i18n-key="My contacts">My contacts</a>'+(!state.active?'<a href="#calendar" data-i18n-key="Calendar">Calendar</a>':'')+items;
-    document.getElementById('ws-nav').innerHTML = items;
+    const nav=window.PLATUM_NAVIGATION.plan({active:state.active,workspaces:state.workspaces,view:state.view,canCreate:state.capabilities.canCreate,personalReady:Boolean(personalFeature)&&state.personal?.available!==false});
+    const names={...labels,personal:'My cabinet','my-contacts':'My contacts',communities:'Communities',team:'Team inbox',contacts:'Agency contacts',settings:'Workspace settings',templates:'Templates',members:'People & access','new-workspace':'Create workspace'};
+    const navLink=key=>'<a href="#'+key+'"'+(nav.current===key?' class="is-current" aria-current="page"':'')+'>'+(icons[key]?'<svg viewBox="0 0 24 24" aria-hidden="true">'+icons[key]+'</svg>':'')+i18n.mark(names[key])+'</a>';
+    document.getElementById('ws-account-nav').innerHTML=nav.account.map(navLink).join('');
+    const details=(kind,title,items,active)=>items.length?'<details class="ws-nav-group" data-nav-section="'+kind+'"'+(active||navExpanded.get((state.active?.id||'account')+':'+kind)?' open':'')+'><summary>'+i18n.mark(title)+'</summary>'+items.map(navLink).join('')+'</details>':'';
+    const projectVisible=Boolean(state.active)&&!globalView();
+    const tools=projectVisible?nav.tools:nav.tools.filter(k=>['team','new-workspace'].includes(k));
+    document.getElementById('ws-nav').innerHTML=(projectVisible?nav.primary.map(navLink).join('')+details('more','More project sections',nav.more,nav.moreActive):'')+details('tools','Team tools',tools,nav.toolsActive);
+    root.querySelector('.ws-brand')?.setAttribute('href',personalFeature&&state.personal?.available!==false?'#personal':'#home');
     const networkLocation=personalFeature?.isGlobalView(state.view)?i18n.t('My cabinet'):networkFeature?.location();
     document.getElementById('ws-location').textContent = networkLocation || (state.active ? state.active.name + ' / ' + i18n.t(operator() ? 'Team workspace' : 'Shared workspace') : i18n.t('Your workspaces'));
     root.dataset.accent = globalView()?'forest':['forest','slate','clay'].includes(state.active?.settings?.accent) ? state.active.settings.accent : 'forest';
@@ -136,8 +134,8 @@
   }
   function homeView() {
     const d = state.data, ws = state.active, ctx = d.project_context[0] || {};
-    const tasks = d.tasks.filter(t => !['completed','cancelled'].includes(t.status) && (operator() || t.assignee_kind === 'client'));
-    const requests = d.requests.filter(r => r.status !== 'resolved' && (operator() ? r.status === 'waiting_team' : r.status === 'waiting_client'));
+    const tasks = ['owner','admin'].includes(ws.role)?d.tasks.filter(t=>!['completed','cancelled'].includes(t.status)):window.PLATUM_NAVIGATION.myTasks(d.tasks,user(),ws.role);
+    const requests = d.requests.filter(r => r.status !== 'resolved' && (operator() ? r.status === 'waiting_team'&&(ws.role!=='team'||!r.owner_id||r.owner_id===user()) : r.status === 'waiting_client'));
     const published = d.materials.filter(m => m.published_version_id).sort((a,b) => String(b.published_at).localeCompare(String(a.published_at)));
     const newMaterials = published.filter(m => !d.material_reads.some(r => r.version_id === m.published_version_id));
     const activeForms = d.forms.filter(f => f.status === 'active' && !d.form_submissions.some(s => s.form_id === f.id && s.form_revision === f.revision && s.submitted_by === user() && s.status !== 'draft'));
@@ -146,7 +144,8 @@
       return operator()?reviews.some(r=>r.status==='changes_requested'):!reviews.some(r=>r.reviewer_id===user());
     });
     const submittedForms=operator()?d.form_submissions.filter(s=>s.status==='submitted'):[];
-    return heading(ws.name, ws.settings?.welcome || uiText('A clear view of what we are working on together.'), button('new-request', uiText('Ask the team'), '', 'ws-button ws-primary')) +
+    return (logoFiles().some(f=>f.id===ws.settings?.logo_file_id)?'<img class="ws-project-logo" data-project-logo alt="" hidden>':'')+heading(ws.name, ws.settings?.welcome || uiText('A clear view of what we are working on together.'), button('new-request', uiText(operator()?'New request':'Ask the team'), '', 'ws-button ws-primary')) +
+      '<div class="ws-project-actions">'+['work','materials','calendar'].filter(k=>(ws.settings?.modules||Object.keys(labels)).includes(k)).map(k=>link(k,uiText(labels[k]))).join('')+'</div>' +
       '<section class="ws-focus"><div><h2><span data-i18n-key="Our focus">Our focus</span></h2><p>' + textNode(ws.current_focus || ctx.objective || uiText('Your team will agree the first focus with you.')) + '</p>' +
       (ctx.next_milestone ? '<p class="ws-next"><strong><span data-i18n-key="Next step">Next step</span></strong> ' + escape(ctx.next_milestone) + '</p>' : '') + '</div>' + link('context', uiText('View our agreement')) + '</section>' +
       '<div class="ws-two-columns"><section><div class="ws-section-heading"><h2>' + i18n.mark(operator() ? 'Needs a response' : 'Your next actions') + '</h2>' + link('work',uiText('All work')) + '</div>' +
@@ -304,7 +303,8 @@
     if(e.type==='settings') {
       const ws=state.active,c=d.project_context[0]||{},a=c.collaboration||{},modules=ws.settings?.modules||Object.keys(labels),all=[...modules,...Object.keys(labels).filter(k=>!modules.includes(k))];
       return heading(uiText('Workspace settings'),uiText('Keep the experience relevant to this client.'))+'<form class="ws-form ws-reading" data-form="settings" data-revision="'+ws.revision+'">'+
-        '<div class="ws-form-grid">'+field(uiText('Workspace name'),'name',ws.name,{required:true,max:120})+select(uiText('Accent'),'accent',uiOptions([['forest',uiText('Forest')],['slate',uiText('Slate')],['clay',uiText('Clay')]]),ws.settings?.accent||'forest')+'</div>'+
+        '<h2>'+i18n.mark('Project appearance')+'</h2><p class="ws-help">'+i18n.mark('Personalise this collaboration. Common Platum pages keep their standard appearance.')+'</p><div class="ws-form-grid">'+field(uiText('Workspace name'),'name',ws.name,{required:true,max:120})+select(uiText('Accent'),'accent',uiOptions([['forest',uiText('Forest')],['slate',uiText('Slate')],['clay',uiText('Clay')]]),ws.settings?.accent||'forest')+'</div>'+
+        (state.branding?.logo?select(uiText('Project logo'),'logo_file_id',uiOptions([['',uiText('No logo')],...logoFiles().map(f=>[f.id,f.name])]),logoFiles().some(f=>f.id===ws.settings?.logo_file_id)?ws.settings.logo_file_id:'')+'<p class="ws-help">'+i18n.mark('Use a shared PNG, JPEG or WebP from Files. Choosing a logo does not change file permissions.')+'</p>':'<p class="ws-help">'+i18n.mark('Logo selection will be available after the project update.')+'</p>')+
         field(uiText('Default time zone'),'timezone',ws.settings?.timezone||'UTC',{required:true,max:100,help:uiText('An IANA zone such as Europe/Prague. Members can set their own display zone in Availability.')})+
         field(uiText('Welcome message'),'welcome',ws.settings?.welcome,{multiline:true,rows:2,max:2000})+field(uiText('Short project description'),'description',ws.description,{multiline:true,max:5000})+
         field(uiText('Current focus'),'focus',ws.current_focus,{max:500})+field(uiText('Current phase'),'phase',ws.current_phase,{max:160})+
@@ -342,7 +342,20 @@
       i18n.apply(holder);
     }catch(error){if(gen===state.generation){holder.innerHTML=heading(uiText('Team inbox'))+empty(uiText('Could not load your inbox'),uiText(error.message))+button('refresh',uiText('Try again'));i18n.apply(holder);}}
   }
+  let logoController=null,logoUrl=null,logoGeneration=0;
+  const logoFiles=()=> (state.data?.workspace_files||[]).filter(f=>f.status==='ready'&&f.client_visible&&['image/png','image/jpeg','image/webp'].includes(f.mime_type));
+  function clearLogo(){logoGeneration++;logoController?.abort();logoController=null;if(logoUrl)URL.revokeObjectURL(logoUrl);logoUrl=null;}
+  async function displayLogo(){
+    const image=document.querySelector('[data-project-logo]'),file=logoFiles().find(f=>f.id===state.active?.settings?.logo_file_id);
+    if(!image||!file||state.loading)return;
+    const generation=logoGeneration;logoController=new AbortController();
+    try{
+      const blob=await api.logoBlob(file,logoController.signal);if(generation!==logoGeneration||!image.isConnected)return;
+      logoUrl=URL.createObjectURL(blob);image.onload=()=>{if(generation===logoGeneration)image.hidden=false;};image.onerror=()=>{if(generation!==logoGeneration)return;image.hidden=true;if(logoUrl){URL.revokeObjectURL(logoUrl);logoUrl=null;}};image.src=logoUrl;
+    }catch{image.hidden=true;}
+  }
   function render() {
+    clearLogo();
     navigation();
     const content=document.getElementById('ws-content');
     if(state.loading){content.innerHTML='<div class="ws-loading" role="status"><span data-i18n-key="Opening your workspace…">Opening your workspace…</span></div>';i18n.apply(content);return;}
@@ -360,6 +373,7 @@
     for(const feature of features)Object.assign(views,feature.views);
     content.innerHTML=(views[state.view]||homeView)()+(state.view==='home'?features.map(f=>f.home?.()||'').join(''):'');
     i18n.apply(content);
+    displayLogo();
     for(const form of content.querySelectorAll('form[data-form]')) {
       const saved=inlineDrafts.get(draftKey(form));
       if(saved){for(const [name,value] of saved){const input=form.elements.namedItem(name);if(input&&input.type!=='file')input.value=value;}const details=form.closest('details');if(details)details.open=true;state.editorDirty=true;}
@@ -397,11 +411,13 @@
       state.active=state.workspaces.find(w=>w.id===preferred)||state.workspaces[0]||null;
       if(state.active){const url=new URL(location.href);url.searchParams.set('workspace',state.active.id);history.replaceState({},'',url);}
       if(preferred&&!state.workspaces.some(w=>w.id===preferred))notice('The selected workspace is no longer available to your account.',true);
-      const [data,network,personal]=await Promise.all([state.active?api.bundle(state.active.id,state.controller.signal):null,api.network?api.network(state.controller.signal):null,api.personal?api.personal(state.controller.signal):null]);
+      const [data,network,personal,branding]=await Promise.all([state.active?api.bundle(state.active.id,state.controller.signal):null,api.network?api.network(state.controller.signal):null,api.personal?api.personal(state.controller.signal):null,api.branding?api.branding(state.controller.signal):{logo:false}]);
       if(generation!==state.generation)return;
       state.data=data;
       state.network=network;
       state.personal=personal;
+      state.branding=branding;
+      if(!initialized&&!location.hash&&!preferred&&personalFeature&&personal?.available!==false){state.view='personal';const url=new URL(location.href);url.hash='personal';history.replaceState({},'',url);}
       if(personalFeature&&personal?.available!==false&&!state.active&&state.view==='home')state.view='personal';
       state.loading=false;render();
     }catch(error){
@@ -457,6 +473,7 @@
       if(type==='decision'){action='decision.record';payload={title:value('title'),context:value('context'),decision:value('decision')};}
       if(type==='settings'){action='workspace.save';payload={revision,...Object.fromEntries(['name','welcome','description','focus','phase','objective','scope','roles','rhythm','boundaries','next_step','accent','timezone'].map(k=>[k,value(k)])),
         modules:[...form.querySelectorAll('[data-module]')].filter(li=>li.dataset.module==='home'||li.querySelector('input').checked).map(li=>li.dataset.module)};}
+      if(type==='settings'&&state.branding?.logo)payload.logo_file_id=value('logo_file_id');
       for(const feature of features){const command=feature.form?.(form,data,value,submitter);if(command){action=command.action;payload=command.payload;featureCommand=command;break;}}
       if(!action)throw new Error('This form is not available.');
       result=featureCommand?.network
@@ -488,7 +505,8 @@
     };
     if(editors[action]){editors[action]();return;}
     for(const feature of features)if(feature.localAction?.(action,control)){i18n.apply(root);return;}
-    if(action==='menu'){const open=root.classList.toggle('ws-menu-open');control.setAttribute('aria-expanded',String(open));return;}
+    if(action==='menu-close'){root.classList.remove('ws-menu-open');const toggle=root.querySelector('[data-action="menu"]');toggle.setAttribute('aria-expanded','false');toggle.focus();return;}
+    if(action==='menu'){const open=root.classList.toggle('ws-menu-open');control.setAttribute('aria-expanded',String(open));if(open)root.querySelector('[data-action="menu-close"]')?.focus({preventScroll:true});return;}
     if(action==='cancel-editor'){if(discard()){state.editor=null;state.editorDirty=false;if(['settings','new-workspace'].includes(state.view))state.view='home';render();}return;}
     if(action==='add-block'){control.closest('form').querySelector('[data-block-editors]').insertAdjacentHTML('beforeend',blockEditor());state.editorDirty=true;i18n.apply(root);return;}
     if(action==='add-question'){control.closest('form').querySelector('[data-question-editors]').insertAdjacentHTML('beforeend',questionEditor());state.editorDirty=true;i18n.apply(root);return;}
@@ -546,6 +564,7 @@
     root.hidden=false;document.body.classList.add('workspace-mode');shell();readRoute();navigation();
     root.addEventListener('submit',submit);root.addEventListener('click',click);
     root.addEventListener('input',event=>{for(const feature of features)feature.input?.(event.target);const form=event.target.closest('form');if(form){state.editorDirty=true;if(['reply','comment','submission','calendar-comment','calendar-response','learning-answer','learning-feedback','inspiration-comment','network-comment','network-contact-note'].includes(form.dataset.form))inlineDrafts.set(draftKey(form),[...new FormData(form).entries()]);}});
+    root.addEventListener('toggle',event=>{if(event.target.dataset?.navSection)navExpanded.set((state.active?.id||'account')+':'+event.target.dataset.navSection,event.target.open);},true);
     root.addEventListener('change',async event=>{
       if(event.target.id==='ws-workspace-select'){if(!discard()){event.target.value=state.active?.id;return;}state.view='home';state.detail=null;state.version=null;const url=new URL(location.href);url.searchParams.set('workspace',event.target.value);url.hash='home';history.replaceState({},'',url);await refresh(event.target.value);}
       if(event.target.matches('[data-version-select]'))location.hash='material/'+state.detail+'/'+event.target.value;
@@ -556,7 +575,7 @@
     window.addEventListener('focus',()=>{if(initialized&&!pendingSaves&&!state.loading&&!state.editor&&!state.editorDirty)refresh();});
     window.addEventListener('hashchange',async()=>{if(!discard()){history.replaceState({},'',location.pathname+location.search+'#'+state.view+(state.detail?'/'+state.detail:'')+(state.version?'/'+state.version:''));return;}state.editor=null;state.editorDirty=false;readRoute();await refresh();document.querySelector('#ws-content h1')?.focus({preventScroll:true});});
     window.addEventListener('beforeunload',event=>{if(state.editorDirty){event.preventDefault();event.returnValue='';}});
-    document.addEventListener('keydown',event=>{if(event.key==='Escape'){root.classList.remove('ws-menu-open');root.querySelector('[data-action="menu"]')?.setAttribute('aria-expanded','false');}});
+    document.addEventListener('keydown',event=>{if(event.key==='Escape'){const wasOpen=root.classList.contains('ws-menu-open');root.classList.remove('ws-menu-open');const toggle=root.querySelector('[data-action="menu"]');toggle?.setAttribute('aria-expanded','false');if(wasOpen)toggle?.focus();}});
     try{state.capabilities=await api.team();}catch(error){state.capabilities={canCreate:false};notice(error.message,true);}
     await refresh(requestedWorkspace);
     initialized=true;

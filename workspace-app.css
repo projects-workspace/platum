@@ -25,11 +25,18 @@
 .ws-brand strong{font:700 21px Manrope,sans-serif}
 .ws-workspace-picker{display:grid;gap:8px;color:#cad4ca;font-size:12px;margin-bottom:28px}
 #workspace-app .ws-workspace-picker select{max-width:100%;background:#fffefa;color:var(--ws-ink);font-size:14px;min-height:44px;border:0;border-radius:9px;padding:9px}
-#ws-nav{display:flex;flex-direction:column;gap:6px}
-#workspace-app #ws-nav a{display:flex;align-items:center;gap:12px;min-height:44px;color:#e5eee3;text-decoration:none;padding:10px 12px;border-radius:9px;font-size:14px}
-#workspace-app #ws-nav a:hover{background:#ffffff10}
-#workspace-app #ws-nav a.is-current{background:var(--ws-tint);color:var(--ws-ink);font-weight:700}
-#ws-nav svg{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+:is(#ws-nav,#ws-account-nav){display:flex;flex-direction:column;gap:6px}
+#workspace-app :is(#ws-nav,#ws-account-nav) a{display:flex;align-items:center;gap:12px;min-height:44px;color:#e5eee3;text-decoration:none;padding:10px 12px;border-radius:9px;font-size:14px}
+#workspace-app :is(#ws-nav,#ws-account-nav) a:hover{background:#ffffff10}
+#workspace-app :is(#ws-nav,#ws-account-nav) a.is-current{background:var(--ws-tint);color:var(--ws-ink);font-weight:700}
+:is(#ws-nav,#ws-account-nav) svg{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+#ws-account-nav{padding-bottom:18px;margin-bottom:20px;border-bottom:1px solid #ffffff30}
+.ws-nav-group{margin-top:16px;padding-top:12px;border-top:1px solid #ffffff30}
+.ws-nav-group summary{cursor:pointer;padding:10px 12px;min-height:44px;color:#e5eee3;font-size:14px}
+.ws-project-actions{display:flex;flex-wrap:wrap;gap:12px 24px;margin:0 0 28px;align-items:center}
+.ws-cabinet-work .ws-actions{max-width:30rem;flex-shrink:1;justify-content:flex-end}
+.ws-cabinet-work>div:first-child{min-width:0}
+@media(max-width:780px){.ws-cabinet-work .ws-actions{justify-content:flex-start}}
 .ws-nav-divider{border-top:1px solid #ffffff30;margin:15px 8px}
 .ws-sidebar-bottom{margin-top:auto;padding-top:36px;font-size:12px;color:#c2d1c2}
 #workspace-app .ws-sidebar-link{color:#edf4e8;background:transparent;border-color:#6f8a74;font-size:12px;text-align:left}
@@ -144,3 +151,10 @@
 @media(max-width:780px){.ws-layout{display:block}.ws-sidebar{position:fixed;left:0;top:0;bottom:0;width:min(290px,85vw);z-index:90;visibility:hidden;transform:translateX(-100%);transition:transform .2s}.ws-menu-open .ws-sidebar{visibility:visible;transform:translateX(0);box-shadow:15px 0 40px #10231b30}.ws-mobile-menu{display:inline-flex}.ws-header{padding:14px 20px;min-height:72px}#ws-location{font-size:12px;flex:1}#ws-content{padding:28px 20px 60px}.ws-notice{margin-inline:20px}.ws-reading{padding:24px 20px}.ws-work-row,.ws-material-row{flex-direction:column;gap:14px}.ws-row-actions{max-width:none;justify-content:flex-start}.ws-form-grid{grid-template-columns:1fr}.ws-page-heading{margin-bottom:28px}.ws-focus{padding:24px}.ws-version-bar{gap:12px}.ws-version-bar .ws-field{flex-wrap:wrap;max-width:100%}.ws-module-list li{align-items:flex-start;flex-wrap:wrap}.ws-module-list .ws-text-button{margin-left:0;margin-right:16px}.ws-sidebar-bottom{padding-bottom:20px}}
 @media(prefers-reduced-motion:reduce){#workspace-app *{scroll-behavior:auto!important;transition:none!important}}
 @media(max-width:420px){.ws-header{gap:10px}.ws-header-refresh{padding:10px;min-width:42px}.ws-header-refresh span{display:none}.ws-header-refresh svg{display:block}.ws-mobile-menu{padding-inline:12px}}
+
+.ws-project-logo{display:block;max-width:min(220px,100%);height:64px;object-fit:contain;object-position:left center;margin:0 0 24px}
+
+.ws-cabinet-work h3,.ws-cabinet-task h3,.ws-cabinet-context{overflow-wrap:anywhere}.ws-cabinet-task>div{min-width:0}
+
+.ws-sidebar-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:24px}.ws-sidebar-head .ws-brand{margin-bottom:0}.ws-sidebar-close{display:none;background:transparent;border-color:#6f8a74;color:#edf4e8;padding:10px;width:44px;min-width:44px;min-height:44px}.ws-sidebar-close svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round}
+@media(max-width:780px){.ws-sidebar-close{display:inline-flex}}

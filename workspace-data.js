@@ -4,6 +4,7 @@
   const base = String(config.supabaseUrl || '').replace(/\/$/, '');
   let serverValidated = false;
   const errors = {
+    INVALID_LOGO: 'Choose a shared PNG, JPEG or WebP from this project.',
     CONTACT_VERIFICATION_REQUIRED: 'Verify this person and account before linking them.',
     EXPORT_OFFER_REQUIRED: 'Offer the client an export with attachments before closing access.',
     EMPTY_MATERIAL: 'Add content, a reference or a file before publishing.',
@@ -147,6 +148,17 @@
     const names=['communities','community_members','community_invitations','community_posts','community_comments','community_events','community_event_versions','community_rsvps','community_referrals','community_participations'];
     const values=await Promise.all(names.map(name=>rows(name,{},signal)));
     return Object.fromEntries(names.map((name,index)=>[name,values[index]]));
+  }
+  async function branding(signal){
+    try{const caps=await rpc('platum_branding_capabilities',{},signal);if(typeof caps?.logo!=='boolean')throw new Error('The workspace returned an invalid response. Refresh to try again.');return caps;}
+    catch(error){if(error.status===404&&['PGRST202','PGRST205'].includes(error.code))return {logo:false};throw error;}
+  }
+  async function logoBlob(file,signal){
+    if(file?.status!=='ready'||file.client_visible!==true||!['image/png','image/jpeg','image/webp'].includes(file.mime_type))throw new Error(errors.INVALID_LOGO);
+    const response=await fetch('/api/files?id='+encodeURIComponent(file.id),{cache:'no-store',headers:{Authorization:(await headers()).Authorization},signal:signal||AbortSignal.timeout(30000)});
+    if(!response.ok)throw new Error('This file is no longer available to your account.');
+    const blob=await response.blob();if(blob.size!==Number(file.size_bytes)||blob.size>10485760)throw new Error('This file is no longer available to your account.');
+    return new Blob([blob],{type:file.mime_type});
   }
   let personalReady=false;
   const personalPending='Personal features are being prepared. Please refresh later or contact the team.';
@@ -300,5 +312,5 @@
       }),
     ];
   }
-  window.PLATUM_DATA = Object.freeze({ access, bundle, team, mutate, personal, personalMutate, network, networkMutate, community, upload, download, exportWorkspace, rpc, queue, saveBlob });
+  window.PLATUM_DATA = Object.freeze({ access, bundle, team, mutate, branding, logoBlob, personal, personalMutate, network, networkMutate, community, upload, download, exportWorkspace, rpc, queue, saveBlob });
 })();

@@ -13,10 +13,21 @@
   const form=(type,item={})=>'<form class="ws-form ws-reading" data-form="'+type+'" data-id="'+esc(item.id||'')+'" data-revision="'+(item.revision||0)+'">';
   const missing=()=>heading(uiText('Not available'))+empty(uiText('This record is not available'),uiText('Your access may have changed. Refresh or return to the list.'));
   const calendarKinds={private:'Private event',free:'Free time',unavailable:'Unavailable for work',shared:'Shared event'};
-  function cabinet(){return heading(uiText('My cabinet'),uiText('Your account, personal contacts and available work. No additional workspace is created.'))+
-   '<section class="ws-section"><h2>'+i18n.mark('Personal information')+'</h2><p>'+link('my-contacts',uiText('My contacts'))+' · '+link('calendar',uiText('Calendar'))+'</p></section>'+
-   '<section class="ws-section"><h2>'+i18n.mark('Your workspaces')+'</h2>'+(state.workspaces.length?state.workspaces.map(w=>'<p><a href="?workspace='+esc(w.id)+'#home">'+esc(w.name)+'</a></p>').join(''):i18n.mark('No workspace access yet'))+'</section>'+
-   '<section class="ws-section"><h2>'+i18n.mark('Communities')+'</h2><p>'+link('communities',uiText('Open communities'))+'</p></section>';}
+  function cabinet(){
+   const nav=window.PLATUM_NAVIGATION;
+   const workLink=(w,view,label)=>'<a href="?workspace='+esc(w.id)+'#'+view+'">'+(typeof label==='string'?i18n.mark(label):label)+'</a>';
+   const tasks=state.active&&state.data?nav.myTasks(state.data.tasks||[],user(),state.active.role):[];
+   return heading(uiText('My cabinet'),uiText('Your work, contacts and calendar in one place.'))+
+    '<div class="ws-project-actions">'+link('my-contacts',uiText('My contacts'))+link('calendar',uiText('Calendar'))+link('communities',uiText('Communities'))+'</div>'+
+    '<section class="ws-section"><h2>'+i18n.mark('Your collaborations')+'</h2>'+
+    (state.workspaces.length?state.workspaces.map(w=>{
+      const modules=w.settings?.modules||['home','work','calendar','materials'];
+      return '<article class="ws-work-row ws-cabinet-work"><div><h3><a href="?workspace='+esc(w.id)+'#home">'+esc(w.name)+'</a></h3><p>'+i18n.mark(nav.roleLabel(w.role))+'</p>'+paragraphs(w.current_focus||w.description||'')+'</div><div class="ws-actions">'+workLink(w,'home','Open project')+['work','materials','calendar'].filter(key=>modules.includes(key)).map(key=>workLink(w,key,{work:'Work & requests',materials:'Materials',calendar:'Calendar'}[key])).join('')+'</div></article>';
+    }).join(''):empty(uiText('No collaborations yet'),uiText('The team will invite you to the work that involves you.')))+
+    (state.capabilities.canCreate?button('new-workspace',uiText('Create workspace'),'','ws-button ws-quiet'):'')+'</section>'+
+    (state.active?'<section class="ws-section"><h2>'+i18n.mark('My next actions')+'</h2><p class="ws-help ws-cabinet-context">'+i18n.mark('From {workspace}','span',{workspace:state.active.name})+'</p>'+
+      (tasks.length?tasks.slice(0,5).map(t=>'<article class="ws-work-row ws-cabinet-task"><div><h3>'+esc(t.title)+'</h3>'+(t.due_at?'<p>'+i18n.dateMarkup(t.due_at)+'</p>':'')+'</div>'+workLink(state.active,'work','Open work')+'</article>').join(''):i18n.mark('No open tasks are assigned to you in this project.'))+'</section>':'');
+  }
   function contacts(){
    const rows=data().contacts;
    return heading(uiText('My contacts'),uiText('Contacts are private until you choose the people and fields to share.'),button('personal-contact-new',uiText('Add contact'),'','ws-button ws-primary'))+

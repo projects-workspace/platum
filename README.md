@@ -34,6 +34,8 @@ For the approved contacts/closed-community extension, its schema prerequisites, 
 
 The accepted personal privacy/access extension reuses the same account/workspace shell and calendar. Its source, ownership/field-sharing contract, attachment archive and ordered pending migrations are described in PROJECT_STATE.md section 14 and the same release guide. No personal workspace, external integration or provider is automatically created.
 
+Cabinet personalisation/navigation source is tracked in PROJECT_STATE.md section 15. Its optional project logo uses an already shared image through the private file API; the capability/settings migration is separate from the prior privacy release. Navigation and existing welcome/palettes remain usable before that optional update. See the same release guide for ordering and scoped checks.
+
 The original deterministic mock remains a legacy UI fixture:
 
 ```sh
