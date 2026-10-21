@@ -4,11 +4,11 @@ The approved first implementation extends the existing Platum application. Deliv
 
 Production delivery was completed on 2026-10-20. The steps below record its order and must not be replayed on the existing production project. See `PROJECT_STATE.md` section 12 for the live verification and the manual repair of the predecessor's missing migration-history row.
 
-## Cabinet personalisation and navigation — next source package
+## Cabinet personalisation and navigation — release guide
 
-Source branch `codex/cabinet-personalization` extends the existing cabinet and configured navigation. `PROJECT_STATE.md` section 15 holds the implementation checkpoint. This package is independent development while the partner completes the previously approved privacy release; it does not merge or deploy itself.
+Source branch `codex/cabinet-personalization` extends the existing cabinet and configured navigation. `PROJECT_STATE.md` section 15 holds the implementation checkpoint. Production delivery is recorded in section 15. The steps below are release guidance; do not replay migrations already present in the assigned project.
 
-Review: [draft PR #4](https://github.com/projects-workspace/platum/pull/4), implementation `565aab2`. GitHub runs `39585431344` and `39585513057` passed for that source. The reviewed publication must include `workspace-navigation.js` and the matching entry/shell/data assets.
+Review: [merged PR #4](https://github.com/projects-workspace/platum/pull/4), merge `c42791a`, reviewed reconciliation head `4a64c31`. The published package includes `workspace-navigation.js` and matching entry/shell/data assets; exact deployment and verification evidence are in `PROJECT_STATE.md` section 15.
 
 - Personal/project navigation is separated, with configured module order preserved, scoped next actions and current-role tool visibility. These are presentation changes; authorization remains server-side. Common Platum pages retain their existing identity.
 - Welcome text and the three existing palettes use the current settings path. A logo is optional and requires a ready, explicitly client-visible PNG/JPEG/WebP from the same workspace. Upload/share it through Files first; choosing it does not change file permissions. Clients cannot edit appearance.
@@ -23,7 +23,7 @@ Additional local checks:
 
 The existing guarded browser harness also covers this package and missing-branding-schema behavior. Its fixture PNG is synthetic; choosing a real logo is a deliberate later project action.
 
-## Personal privacy and account cabinet — current source package
+## Personal privacy and account cabinet — predecessor package
 
 The owner accepted the initial personal privacy/access model and authorized implementation after PR #2. Source branch: `codex/personal-privacy`, based on `main` `c46a9ac`. `PROJECT_STATE.md` section 14 is the current implementation checkpoint. This section supersedes the old PR #2-only publication prompt; previous procedures below remain historical or describe the predecessor.
 
