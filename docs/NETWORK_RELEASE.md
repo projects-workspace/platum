@@ -8,6 +8,8 @@ Production delivery was completed on 2026-10-20. The steps below record its orde
 
 The user approved only planning steps 1–2 on 2026-10-21: reconcile the current state and refine community behavior. Contact sharing, personal privacy rules, admission/offboarding redesign and integrations remain outside this change. The new source is based on `origin/main` checkpoint `1166851`, which records the completed first release.
 
+Review: [draft PR #2](https://github.com/projects-workspace/platum/pull/2), branch `codex/community-participation`, base `main`. Implementation `bae4d4d` passed GitHub push and PR checks. This PR does not merge or publish itself.
+
 ### Access contract
 
 | Action or data | Active ordinary community member | Existing community manager / platform operator | Outsider or revoked ordinary member |
