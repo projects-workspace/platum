@@ -142,7 +142,7 @@
   }
   async function network(signal) {
     await rpc('platum_accept_community_invitations', {}, signal);
-    const names=['communities','community_members','community_invitations','community_posts','community_comments','community_events','community_event_versions','community_rsvps','community_referrals'];
+    const names=['communities','community_members','community_invitations','community_posts','community_comments','community_events','community_event_versions','community_rsvps','community_referrals','community_participations'];
     const values=await Promise.all(names.map(name=>rows(name,{},signal)));
     return Object.fromEntries(names.map((name,index)=>[name,values[index]]));
   }

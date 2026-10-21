@@ -22,7 +22,7 @@ const service=async(action,actorId,c,payload,op=randomUUID())=>{
   await actor(actorId,'service_role');
   return (await query('select public.platum_community_service($1,$2,$3,$4::jsonb,$5) result',[action,actorId,c,JSON.stringify(payload),op]))[0].result;
 };
-async function bootstrap(){
+async function bootstrap({deferParticipation=false}={}){
   await db.exec(`create role anon; create role authenticated; create role service_role bypassrls;
     create schema auth; create schema storage; create schema extensions;
     create table auth.users(id uuid primary key,email text,email_confirmed_at timestamptz,raw_user_meta_data jsonb default '{}',raw_app_meta_data jsonb default '{}');
@@ -34,6 +34,7 @@ async function bootstrap(){
     alter table storage.objects enable row level security;grant usage on schema storage to authenticated,anon,service_role;
     grant select,insert on storage.objects to authenticated;`);
   for(const name of fs.readdirSync(path.join(__dirname,'../supabase/migrations')).filter(n=>n.endsWith('.sql')).sort()){
+    if(deferParticipation&&name==='20261021120000_community_participation.sql')continue;
     try{await db.exec(fs.readFileSync(path.join(__dirname,'../supabase/migrations',name),'utf8'));}
     catch(e){throw new Error('Migration '+name+': '+e.message);}
   }
@@ -91,16 +92,55 @@ if(require.main===module)(async()=>{
    const exported=(await query('select public.platum_export($1) result',[wa]))[0].result;assert.equal(JSON.stringify(exported).includes('PRIVATE_NETWORK_CONTEXT'),false);
    await actor(ids.member);assert.equal((await query('select * from public.workspace_contacts')).length,0);
  });
- await check('posts preserve draft privacy, ownership and comment context',async()=>{
-   await actor(ids.member);post=await mutate('community.post.save',c.id,{kind:'resource',title:'Useful resource',body:'First version',status:'draft'});
+ await check('only agency managers publish; drafts and comment snapshots remain protected',async()=>{
+   await actor(ids.member);
+   for(const kind of ['announcement','resource','help'])await deny(()=>mutate('community.post.save',c.id,{kind,title:'Forbidden',status:'published'}));
+   await actor(ids.founder);post=await mutate('community.post.save',c.id,{kind:'resource',title:'Useful resource',body:'First version',status:'draft'});
    await actor(ids.other);assert.equal((await query('select * from public.community_posts')).length,0);
    await deny(()=>mutate('community.post.save',c.id,{id:post.id,revision:post.revision,kind:'resource',title:'Hijacked',status:'published'}));
-   await actor(ids.member);await deny(()=>mutate('community.post.save',c.id,{kind:'announcement',title:'Forbidden',status:'published'}));
-   post=await mutate('community.post.save',c.id,{id:post.id,revision:post.revision,kind:'resource',title:'Useful resource',body:'First version',status:'published'});
+   await actor(ids.founder);post=await mutate('community.post.save',c.id,{id:post.id,revision:post.revision,kind:'resource',title:'Useful resource',body:'First version',status:'published'});
    await actor(ids.other);await mutate('community.comment',c.id,{id:post.id,body:'Helpful'});
-   await actor(ids.member);post=await mutate('community.post.save',c.id,{id:post.id,revision:post.revision,kind:'resource',title:'Revised',body:'Second version',status:'published'});
+   await actor(ids.founder);post=await mutate('community.post.save',c.id,{id:post.id,revision:post.revision,kind:'resource',title:'Revised',body:'Second version',status:'published'});
    const comments=await query('select * from public.community_comments');assert.equal(comments[0].context_snapshot.title,'Useful resource');
-   await deny(()=>mutate('community.post.save',second.id,{kind:'resource',title:'Other circle',status:'published'}));
+   await actor(ids.member);await deny(()=>mutate('community.post.save',second.id,{kind:'resource',title:'Other circle',status:'published'}));
+ });
+ await check('voluntary requests keep one revision-checked self-report per participant and request version',async()=>{
+   await actor(ids.founder);post=await mutate('community.post.save',c.id,{kind:'help',title:'Optional request',body:'Original request',status:'published'});
+   await actor(ids.member);const op=randomUUID(),p={id:post.id,post_revision:post.revision,response_revision:0,status:'participating',user_id:ids.other};
+   let r=await mutate('community.participation',c.id,p,op);
+   assert.equal(r.user_id,ids.member,'identity is from Auth, never payload');
+   assert.equal((await mutate('community.participation',c.id,p,op)).id,r.id);
+   await deny(()=>mutate('community.participation',c.id,{...p,status:'completed'},op),/IDEMPOTENCY_CONFLICT/);
+   await deny(()=>mutate('community.participation',c.id,{...p,status:'completed'}),/CONFLICT/);
+   r=await mutate('community.participation',c.id,{...p,response_revision:r.revision,status:'completed'});
+   assert.equal(r.context_snapshot.body,'Original request');
+   assert.equal((await query('select * from public.community_participations')).length,1);
+   await deny(()=>query("update public.community_participations set status='completed'"));
+   await actor(ids.other);assert.equal((await query('select * from public.community_participations')).length,0,'peer reports are not exposed');
+   await deny(()=>mutate('community.participation',second.id,p));
+   await deny(()=>mutate('community.participation',c.id,{...p,status:'verified'}),/INVALID/);
+   await actor(ids.founder);assert.equal((await query("select count(*)::int n from public.community_participations where status='completed'"))[0].n,1);
+   post=await mutate('community.post.save',c.id,{id:post.id,revision:post.revision,kind:'help',title:'Changed request',body:'Different request',status:'published'});
+   await actor(ids.member);await deny(()=>mutate('community.participation',c.id,p,op),/CURRENT_VERSION_CHANGED/);
+   assert.equal((await query('select * from public.community_participations where post_revision=$1',[post.revision])).length,0);
+   let fresh=await mutate('community.participation',c.id,{...p,post_revision:post.revision,response_revision:0,status:'completed'});
+   fresh=await mutate('community.participation',c.id,{...p,post_revision:post.revision,response_revision:fresh.revision,status:'withdrawn'});
+   assert.equal(fresh.status,'withdrawn');
+   assert.equal((await query('select * from public.community_participations')).length,2);
+ });
+ await check('participation denies uninvited, unconfirmed, draft, archived and non-request targets',async()=>{
+   await actor(ids.unconfirmed);await deny(()=>mutate('community.participation',c.id,{id:post.id,post_revision:post.revision,status:'completed'}),/UNAUTHENTICATED/);
+   await actor(ids.team);await deny(()=>mutate('community.participation',c.id,{id:post.id,post_revision:post.revision,status:'completed'}));
+   await actor(ids.founder);
+   for(const [kind,status] of [['help','draft'],['help','archived'],['resource','published'],['announcement','published']]){
+     const target=await mutate('community.post.save',c.id,{kind,status,title:'Unavailable request'});
+     await actor(ids.member);await deny(()=>mutate('community.participation',c.id,{id:target.id,post_revision:target.revision,status:'completed'}));
+     await actor(ids.founder);
+   }
+   await db.exec('reset role');await db.query("insert into public.platform_roles(user_id,role) values($1,'platform_admin')",[ids.team]);
+   await actor(ids.team);await deny(()=>mutate('community.participation',c.id,{id:post.id,post_revision:post.revision,status:'completed'}));
+   await db.exec('reset role');await db.query('delete from public.platform_roles where user_id=$1',[ids.team]);
+   await actor(null,'anon');await deny(()=>query('select * from public.community_participations'));
  });
  await check('event time changes require a new RSVP and preserve earlier responses',async()=>{
    await actor(ids.founder);event=await mutate('community.event.save',c.id,{title:'Community call',starts_at:'2026-11-01T12:00:00Z',ends_at:'2026-11-01T13:00:00Z',timezone:'Europe/Warsaw'});version=event.version.id;
@@ -121,11 +161,13 @@ if(require.main===module)(async()=>{
    assert.equal((await query('select * from public.workspaces')).length,1);
  });
  await check('revocation denies both reads and replay of a cached mutation',async()=>{
-   await actor(ids.member);const op=randomUUID(),p={kind:'help',title:'Voluntary collaboration',body:'Synthetic request',status:'published'};
-   await mutate('community.post.save',c.id,p,op);
+   await actor(ids.member);const previous=(await query('select * from public.community_participations where post_id=$1 and post_revision=$2',[post.id,post.revision]))[0];
+   const op=randomUUID(),p={id:post.id,post_revision:post.revision,response_revision:previous.revision,status:'participating'};
+   await mutate('community.participation',c.id,p,op);
    await service('member.revoke',ids.founder,c.id,{id:ids.member});
    await actor(ids.member);assert.equal((await query('select * from public.communities')).length,0);assert.equal((await query('select * from public.community_comments')).length,0);
-   await deny(()=>mutate('community.post.save',c.id,p,op));
+   assert.equal((await query('select * from public.community_participations')).length,0);
+   await deny(()=>mutate('community.participation',c.id,p,op));
  });
  await check('expired and revoked invitations cannot admit an account',async()=>{
    const expired=await service('invitation.create',ids.founder,second.id,{email:'other@platum.test'});
@@ -141,6 +183,8 @@ if(require.main===module)(async()=>{
    const archived=await mutate('community.save',c.id,{revision:current.revision,name:current.name,status:'archived'});
    await deny(()=>mutate('community.event.save',c.id,{title:'Blocked'}));
    await actor(ids.other);assert.equal((await query('select * from public.communities')).length,0);
+   assert.equal((await query('select * from public.community_participations')).length,0);
+   await deny(()=>mutate('community.participation',c.id,{id:post.id,post_revision:post.revision,status:'completed'}));
    await actor(ids.founder);await mutate('community.save',c.id,{revision:archived.revision,name:archived.name,status:'active'});
  });
  console.log('PASS '+passed.length+' network PostgreSQL groups (synthetic local engine; hosted services not exercised).');

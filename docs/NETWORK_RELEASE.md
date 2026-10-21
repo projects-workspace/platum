@@ -4,6 +4,35 @@ The approved first implementation extends the existing Platum application. Deliv
 
 Production delivery was completed on 2026-10-20. The steps below record its order and must not be replayed on the existing production project. See `PROJECT_STATE.md` section 12 for the live verification and the manual repair of the predecessor's missing migration-history row.
 
+## Agency publishing and voluntary participation — next source change
+
+The user approved only planning steps 1–2 on 2026-10-21: reconcile the current state and refine community behavior. Contact sharing, personal privacy rules, admission/offboarding redesign and integrations remain outside this change. The new source is based on `origin/main` checkpoint `1166851`, which records the completed first release.
+
+Review: [draft PR #2](https://github.com/projects-workspace/platum/pull/2), branch `codex/community-participation`, base `main`. Implementation `bae4d4d` passed GitHub push and PR checks. This PR does not merge or publish itself.
+
+### Access contract
+
+| Action or data | Active ordinary community member | Existing community manager / platform operator | Outsider or revoked ordinary member |
+| --- | --- | --- | --- |
+| Create, edit, publish or archive community posts | Denied, including their legacy posts and cached publication retries | Allowed in active communities | Denied |
+| Read published posts and add discussion | Existing rules; discussion requires active community | Existing rules; no new content writes while archived | Denied |
+| Respond to a voluntary help request | Own response only, with explicit active membership | Own response only if explicitly enrolled; management authority alone does not enroll them | Denied |
+| Read participation records | Own records only, while the post remains readable | All readable request responses for management summaries | Denied |
+| Read profiles, RSVP or workspace content | Existing rules unchanged | Existing rules unchanged | Existing revocation rules |
+
+The additive `supabase/migrations/20261021120000_community_participation.sql` adds one table and replaces the existing mutation implementation, retaining its wrapper and grants. It creates no users, communities, memberships, invitations or posts. Existing member posts, private author drafts and discussion snapshots are preserved with their existing read rules; members cannot publish/edit/archive them afterward. Any later decision to archive legacy content must be explicit.
+
+Responses are `participating`, `completed` or `withdrawn`, keyed by request, request revision and authenticated user. A user can correct or withdraw their response. Writes use response revisions and operation IDs; duplicate retries do not create another response. Request changes require a new response, retaining the earlier context snapshot. Manager summaries count current-version responses by their current status, not lifetime completions. `completed` means the participant reported completion; no external action is independently verified. Reports do not create assigned workspace tasks or grant access. Revoked members' historical reports remain available to managers under existing post access; this does not decide future account deletion/offboarding policy.
+
+### Publication prerequisite for this change
+
+1. Confirm the deployed source and the existing `20261017230000` migration history in the assigned Platum project. Do not replay either previous migration, history repair or cleanup.
+2. Apply **only** `20261021120000_community_participation.sql` through the partner's migration process, before publishing the matching frontend. Verify its table RLS, grants and replacement RPC. Existing frontend versions remain data-compatible; member publication is denied by the new server policy even if an older interface still offers the button.
+3. Publish the reviewed source through the agreed partner process. The new frontend reads `community_participations`; it requires this migration. Keep existing configuration/credentials unchanged.
+4. Verify exact served source and canonical URL. With separately authorized test sessions, verify manager publishing, member publication denial, comments, response reload/withdraw/version changes, manager counts, peer-response isolation and revocation. Do not infer hosted Auth/mail acceptance from local simulation or create real invitations as an incidental check.
+
+The 2026-10-21 task prepares source and handoff; it does not apply the new production migration or deploy. The completed 2026-10-20 procedure below is historical guidance.
+
 Review: [draft PR #1](https://github.com/projects-workspace/platum/pull/1), branch `codex/community-contacts`, based on `codex/platform-founder-roles`. Both source layers must be included when the partner publishes; this PR does not merge the predecessor.
 
 ## Included behavior
@@ -42,6 +71,7 @@ Open **Contact network** while the intended internal workspace is selected to ma
 The PostgreSQL replay test accepts an externally supplied local PGlite module (pinned at 0.5.10 in CI), without adding a global integration or a production connection:
 
     PLATUM_PGLITE_MODULE=/absolute/local/path/to/@electric-sql/pglite node tests/network-database.cjs
+    PLATUM_PGLITE_MODULE=/absolute/local/path/to/@electric-sql/pglite node tests/community-upgrade.cjs
 
 With Playwright available through the local runtime:
 
