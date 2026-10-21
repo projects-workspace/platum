@@ -8,6 +8,8 @@ Production delivery was completed on 2026-10-20. The steps below record its orde
 
 The owner accepted the initial personal privacy/access model and authorized implementation after PR #2. Source branch: `codex/personal-privacy`, based on `main` `c46a9ac`. `PROJECT_STATE.md` section 14 is the current implementation checkpoint. This section supersedes the old PR #2-only publication prompt; previous procedures below remain historical or describe the predecessor.
 
+Review: [draft PR #3](https://github.com/projects-workspace/platum/pull/3), implementation `f5bae28`; its GitHub Actions run `39574677256` passed. Source is prepared for review and the partner process, with no production mutation or publication.
+
 ### Privacy and ownership contract
 
 - One existing Auth account owns its personal contact book and calendar entries. No personal/client workspace is created automatically; existing workspaces remain work contexts. Unassigned confirmed accounts can use their own cabinet without gaining workspace access.
