@@ -4,11 +4,17 @@ The approved first implementation extends the existing Platum application. Deliv
 
 Production delivery was completed on 2026-10-20. The steps below record its order and must not be replayed on the existing production project. See `PROJECT_STATE.md` section 12 for the live verification and the manual repair of the predecessor's missing migration-history row.
 
-## Agency publishing and voluntary participation — next source change
+## Agency publishing and voluntary participation — merged source, production pending
 
 The user approved only planning steps 1–2 on 2026-10-21: reconcile the current state and refine community behavior. Contact sharing, personal privacy rules, admission/offboarding redesign and integrations remain outside this change. The new source is based on `origin/main` checkpoint `1166851`, which records the completed first release.
 
-Review: [draft PR #2](https://github.com/projects-workspace/platum/pull/2), branch `codex/community-participation`, base `main`. Implementation `bae4d4d` passed GitHub push and PR checks. This PR does not merge or publish itself.
+Review: [merged PR #2](https://github.com/projects-workspace/platum/pull/2), merged into `main` as `31c03c3` on 2026-10-21 after explicit owner authorization. Implementation `bae4d4d`, reviewed head `b7ce5ec` and main merge checks passed. Production publication remains a separate partner action. A post-merge GET still serves the prior network asset; the new participation-table REST endpoint returns `404 / PGRST205`.
+
+### Короткий промпт для Codex партнера
+
+Ця редакція стосується пакета PR #2. Після наступних робіт перед фінальною передачею звірити перелік нових міграцій.
+
+> Онови Platum з актуального `origin/main`; PR #2 вже змерджено. Прочитай `PROJECT_STATE.md`, секцію 13, та `docs/NETWORK_RELEASE.md`. У призначеному Platum Supabase звір історію міграцій і застосуй лише відсутню `20261021120000_community_participation.sql`; не повторюй старі міграції, repair чи cleanup. Після підтвердження схеми опублікуй відповідний source у наявний Vercel-проєкт на `https://client-cabinet.vercel.app`. Звір commit, deployment і canonical URL; перевір менеджерські публікації, добровільні відповіді та обмеження доступу на дозволених тестових сесіях. Не створюй реальних акаунтів чи запрошень побічно. Онови `PROJECT_STATE.md`; вкажи SHA, міграцію, deployment і результати PASS/NOT_RUN.
 
 ### Access contract
 
