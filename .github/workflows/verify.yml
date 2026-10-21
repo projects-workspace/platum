@@ -31,7 +31,7 @@ jobs:
         run: node scripts/check-integrity.js
 
       - name: Verify workspace management authorization
-        run: node --test tests/team-api.test.js tests/community-api.test.js tests/files-api.test.js tests/workspace-routing.test.js tests/calendar-domain.test.js tests/localization.test.js tests/archive.test.js tests/export.test.js
+        run: node --test tests/team-api.test.js tests/community-api.test.js tests/files-api.test.js tests/workspace-routing.test.js tests/calendar-domain.test.js tests/localization.test.js tests/archive.test.js tests/export.test.js tests/personal-readiness.test.js
 
       - name: Verify network migration and row isolation in local PostgreSQL
         run: |

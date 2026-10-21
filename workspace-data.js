@@ -148,8 +148,23 @@
     const values=await Promise.all(names.map(name=>rows(name,{},signal)));
     return Object.fromEntries(names.map((name,index)=>[name,values[index]]));
   }
-  const personal=signal=>rpc('platum_personal_data',{},signal);
-  const personalMutate=(action,scope,payload,operation=crypto.randomUUID())=>rpc('platum_personal_mutate',{action,payload,operation_id:operation});
+  let personalReady=false;
+  const personalPending='Personal features are being prepared. Please refresh later or contact the team.';
+  async function personal(signal){
+    try{
+      const data=await rpc('platum_personal_data',{},signal);
+      if(!data||!['contacts','events','busy','people','joinable','applications'].every(key=>Array.isArray(data[key])))throw new Error('The workspace returned an invalid response. Refresh to try again.');
+      personalReady=true;return {...data,available:true};
+    }catch(error){
+      personalReady=false;
+      if(error.status===404&&['PGRST202','PGRST205'].includes(error.code))return {available:false,contacts:[],events:[],busy:[],people:[],joinable:[],applications:[]};
+      throw error;
+    }
+  }
+  async function requirePersonal(){if(!personalReady)await personal();if(!personalReady)throw new Error(personalPending);}
+  async function personalMutate(action,scope,payload,operation=crypto.randomUUID()){
+    await requirePersonal();return rpc('platum_personal_mutate',{action,payload,operation_id:operation});
+  }
   function networkMutate(action, scope, payload, operation=crypto.randomUUID()) {
     return rpc('platum_network_mutate',{action,scope_id:scope,payload,operation_id:operation});
   }
@@ -202,6 +217,7 @@
     const data = await rpc('platum_export', { workspace_id: workspace });
     const filename = 'platum-workspace-' + new Date().toISOString().slice(0, 10);
     if(format==='archive'){
+      await requirePersonal();
       const archivePrefix=filename+'-'+crypto.randomUUID().slice(0,8);
       const encode=value=>new TextEncoder().encode(JSON.stringify(value,null,2));
       const manifest={format:'platum.archive.v1',exported_at:data.exported_at,files:[],volumes:[]};

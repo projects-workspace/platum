@@ -10,6 +10,8 @@ The owner accepted the initial personal privacy/access model and authorized impl
 
 Review: [draft PR #3](https://github.com/projects-workspace/platum/pull/3), implementation `f5bae28`; its GitHub Actions run `39574677256` passed. Source is prepared for review and the partner process, with no production mutation or publication.
 
+Predecessor release update: partner checkpoint `3669ff3` records PR #2's `20261021120000` migration and matching Vercel source as published. Confirm this history rather than replaying it. The remaining privacy migration is `20261021160000`. Git deployments from `main` are enabled, so the frontend now keeps prior work available while a missing privacy RPC is reported as pending; privacy controls and attachment archives wait for schema readiness. This guard is not hosted privacy acceptance.
+
 ### Privacy and ownership contract
 
 - One existing Auth account owns its personal contact book and calendar entries. No personal/client workspace is created automatically; existing workspaces remain work contexts. Unassigned confirmed accounts can use their own cabinet without gaining workspace access.
@@ -29,7 +31,7 @@ Review: [draft PR #3](https://github.com/projects-workspace/platum/pull/3), impl
 
 ### Короткий промпт для Codex партнера
 
-> Онови Platum до погодженого source з особистою приватністю (`codex/personal-privacy`, або відповідного `main` після merge). Прочитай `PROJECT_STATE.md` §14 і `docs/NETWORK_RELEASE.md`. У призначеному Supabase звір історію; застосуй лише відсутні нові міграції у порядку `20261021120000` → `20261021160000`. Старі міграції, repair і cleanup не повторюй. Після підтвердження схеми опублікуй matching source/API у наявний Vercel на `https://client-cabinet.vercel.app`. Перевір приватні контакти/поля, busy-only календар, заявки, експорт із вкладеннями та відкликання на дозволених тестових сесіях. Реальних акаунтів, запрошень чи видалень побічно не роби. Онови `PROJECT_STATE.md` з SHA, міграціями, deployment і PASS/NOT_RUN.
+> Онови Platum з `origin/main` після merge PR #3. Прочитай `PROJECT_STATE.md` §14 і `docs/NETWORK_RELEASE.md`. У призначеному Supabase звір історію: `20261021120000` уже записана як застосована; застосуй лише відсутню `20261021160000_personal_privacy.sql` після підтвердження передумов. Старі міграції, repair і cleanup не повторюй. Потім перевір можливий автодеплой і онови matching source/API у наявному Vercel на `https://client-cabinet.vercel.app`. Перевір приватність, календар, заявки й експорт на дозволених тестових сесіях. Реальних акаунтів, запрошень чи видалень побічно не роби. Запиши в `PROJECT_STATE.md` commit, міграцію, deployment і PASS/NOT_RUN.
 
 ### Additional local checks
 

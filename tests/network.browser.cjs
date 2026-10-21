@@ -151,6 +151,12 @@ let server,browser;
  await go(client,'files');await client.locator('[data-action=export][data-format=archive]').click();await client.getByText('Archive prepared. Keep all volumes and the manifest.',{exact:true}).waitFor();await client.waitForFunction(()=>true);assert.equal(downloads.length,2);await Promise.all(savedDownloads);
  const manifest=JSON.parse(fs.readFileSync(path.join(downloadDir,downloads.find(n=>n.endsWith('-manifest.json'))),'utf8'));assert.equal(manifest.complete,true);assert.equal(manifest.files[0].status,'INCLUDED');
  console.log('PASS personal UI: private account book, field-limited agency sharing/editing/revocation, API redaction, busy-only calendar, unassigned cabinet, administrator-approved application/exit, ZIP and attachment stream.');
+ // A main Git deployment must not break existing work while the privacy migration is pending.
+ const waiting=await pageFor('client');await waiting.route('**/rest/v1/rpc/platum_personal_data',r=>r.fulfill({status:404,contentType:'application/json',body:JSON.stringify({code:'PGRST202',message:'Function not found'})}));
+ await go(waiting,'work');assert.equal(await waiting.locator('#ws-nav a[href="#my-contacts"]').count(),0);assert.equal(await waiting.locator('[data-action=export][data-format=archive]:visible').count(),0);
+ await go(waiting,'calendar');assert.equal(await waiting.locator('[data-action=personal-event-new]').count(),0);
+ await go(waiting,'my-contacts');await waiting.getByRole('heading',{name:'Personal features are being prepared.',exact:true}).waitFor();
+ console.log('PASS pending migration UI: existing work/calendar remain available; private controls/archives wait; direct personal route shows pending state.');
  const evidence=process.env.PLATUM_NETWORK_SCREENSHOTS||'/private/tmp/platum-network-evidence';fs.mkdirSync(evidence,{recursive:true});
  for(const page of [founder,member]){
   await go(page,'community/'+c.id);

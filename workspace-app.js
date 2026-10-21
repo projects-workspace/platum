@@ -94,7 +94,7 @@
     i18n.apply(root);
   }
   function navigation() {
-    for(const control of root.querySelectorAll('[data-action="export"]'))control.hidden=Boolean(!state.active||globalView());
+    for(const control of root.querySelectorAll('[data-action="export"]'))control.hidden=Boolean(!state.active||globalView()||control.dataset.format==='archive'&&state.personal?.available===false);
     document.querySelector('.ws-workspace-picker').hidden=Boolean(globalView());
     document.getElementById('ws-workspace-select').innerHTML = state.workspaces.map(w => '<option value="' + w.id + '"' + (w.id === state.active?.id ? ' selected' : '') + '>' + escape(w.name) + '</option>').join('') || '<option data-i18n-key="No workspace yet">No workspace yet</option>';
     const modules = state.active ? state.active.settings?.modules || Object.keys(labels) : [];
@@ -107,7 +107,7 @@
     if (state.capabilities.canCreate) items += '<a href="#new-workspace"><span data-i18n-key="Create workspace">Create workspace</span></a>';
     if(networkFeature)items='<a href="#communities"'+(state.view.startsWith('communit')?' class="is-current"':'')+' data-i18n-key="Communities">Communities</a>'+
       (operator()?'<a href="#contacts"'+(['contacts','contact'].includes(state.view)?' class="is-current"':'')+' data-i18n-key="Contact network">Contact network</a>':'')+(modules.length?'<div class="ws-nav-divider"></div>':'')+items;
-    if(personalFeature)items='<a href="#personal" data-i18n-key="My cabinet">My cabinet</a><a href="#my-contacts" data-i18n-key="My contacts">My contacts</a>'+(!state.active?'<a href="#calendar" data-i18n-key="Calendar">Calendar</a>':'')+items;
+    if(personalFeature&&state.personal?.available!==false)items='<a href="#personal" data-i18n-key="My cabinet">My cabinet</a><a href="#my-contacts" data-i18n-key="My contacts">My contacts</a>'+(!state.active?'<a href="#calendar" data-i18n-key="Calendar">Calendar</a>':'')+items;
     document.getElementById('ws-nav').innerHTML = items;
     const networkLocation=personalFeature?.isGlobalView(state.view)?i18n.t('My cabinet'):networkFeature?.location();
     document.getElementById('ws-location').textContent = networkLocation || (state.active ? state.active.name + ' / ' + i18n.t(operator() ? 'Team workspace' : 'Shared workspace') : i18n.t('Your workspaces'));
@@ -346,6 +346,7 @@
     navigation();
     const content=document.getElementById('ws-content');
     if(state.loading){content.innerHTML='<div class="ws-loading" role="status"><span data-i18n-key="Opening your workspace…">Opening your workspace…</span></div>';i18n.apply(content);return;}
+    if(personalFeature?.isGlobalView(state.view)&&state.personal?.available===false){content.innerHTML=heading(uiText('Personal features are being prepared.'))+empty(uiText('Refresh later or contact the team.'))+button('refresh',uiText('Try again'));i18n.apply(content);return;}
     if(state.editor){content.innerHTML=editorView();i18n.apply(content);content.querySelector('h1')?.focus({preventScroll:true});return;}
     if(state.view==='new-workspace'&&state.capabilities.canCreate){state.editor={type:'workspace'};content.innerHTML=editorView();i18n.apply(content);return;}
     if((!state.active||!state.data)&&!globalView()){content.innerHTML=heading(uiText('Your workspaces'),uiText('Your account is signed in.'))+
@@ -401,7 +402,7 @@
       state.data=data;
       state.network=network;
       state.personal=personal;
-      if(personalFeature&&!state.active&&state.view==='home')state.view='personal';
+      if(personalFeature&&personal?.available!==false&&!state.active&&state.view==='home')state.view='personal';
       state.loading=false;render();
     }catch(error){
       if(error.name==='AbortError'||generation!==state.generation)return;

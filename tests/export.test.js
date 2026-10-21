@@ -6,7 +6,7 @@ async function fixture(files,bodies){
  class LocalURL extends URL{static createObjectURL(blob){const id='blob:'+seq++;blobs.set(id,blob);return id;}static revokeObjectURL(){}}
  const window={CLIENT_SPACE_CONFIG:{supabaseUrl:'https://platum.test',supabasePublishableKey:'synthetic'},CLIENT_SPACE_AUTH_CONTEXT:{accessToken:'synthetic-user'},PLATUM_ARCHIVE:archive};
  const document={body:{append(){}},createElement(){return {click(){saved.push({name:this.download,blob:blobs.get(this.href)});},remove(){}};}};
- const fetch=async(url,options)=>{calls.push({url,options});if(url.endsWith('/rpc/platum_export'))return new Response(JSON.stringify({workspace:{name:'Shared work'},exported_at:'2026-10-21',files}),{headers:{'Content-Type':'application/json'}});const id=new URL(url,'https://platum.test').searchParams.get('id');return bodies[id]===undefined?new Response('Denied',{status:403}):new Response(bodies[id]);};
+ const fetch=async(url,options)=>{calls.push({url,options});if(url.endsWith('/rpc/platum_personal_data'))return new Response(JSON.stringify({contacts:[],events:[],busy:[],people:[],joinable:[],applications:[]}));if(url.endsWith('/rpc/platum_export'))return new Response(JSON.stringify({workspace:{name:'Shared work'},exported_at:'2026-10-21',files}),{headers:{'Content-Type':'application/json'}});const id=new URL(url,'https://platum.test').searchParams.get('id');return bodies[id]===undefined?new Response('Denied',{status:403}):new Response(bodies[id]);};
  vm.runInNewContext(fs.readFileSync(require.resolve('../workspace-data'),'utf8'),{window,document,fetch,Blob,TextEncoder,URL:LocalURL,AbortSignal,crypto:require('node:crypto').webcrypto,setTimeout(){}});
  const result=await window.PLATUM_DATA.exportWorkspace('synthetic-workspace','archive');return {result,saved,calls};
 }
@@ -14,7 +14,7 @@ function zipEntries(bytes){const v=new DataView(bytes.buffer,bytes.byteOffset,by
 test('client archive contains the projected history and exact accessible attachment bytes',async()=>{
  const f=await fixture([{id:'one',name:'Документ.txt',size_bytes:5}],{one:'hello'});assert.equal(f.result.complete,true);assert.equal(f.saved.length,2);
  const files=zipEntries(new Uint8Array(await f.saved[0].blob.arrayBuffer()));assert.equal(new TextDecoder().decode(files['attachments/one-Документ.txt']),'hello');assert.ok(files['workspace.json']);assert.ok(files['manifest.json']);assert.equal(JSON.parse(new TextDecoder().decode(files['manifest.json'])).complete,true);
- assert.equal(f.calls[1].options.headers.Authorization,'Bearer synthetic-user');assert.equal(f.calls[1].options.cache,'no-store');
+ assert.equal(f.calls.find(c=>c.url.startsWith('/api/files')).options.headers.Authorization,'Bearer synthetic-user');assert.equal(f.calls.find(c=>c.url.startsWith('/api/files')).options.cache,'no-store');
 });
 test('inaccessible or truncated files are explicitly NOT_INCLUDED; an incomplete archive is never reported complete',async()=>{
  const f=await fixture([{id:'allowed',name:'yes.txt',size_bytes:2},{id:'revoked',name:'no.txt',size_bytes:3},{id:'truncated',name:'short.txt',size_bytes:99}],{allowed:'ok',truncated:'x'});

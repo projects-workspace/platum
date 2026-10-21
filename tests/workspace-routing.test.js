@@ -42,7 +42,7 @@ test('workspace creation waits for capabilities to finish loading', () => {
 for (const hasWorkspace of [false, true]) test('shared-history export visibility follows current workspace access: ' + hasWorkspace, () => {
   const navigationSource = source.slice(source.indexOf('  function navigation() {'), source.indexOf('  function tasksList('));
   const active = hasWorkspace ? { id: 'workspace', name: 'Known workspace', role: 'client' } : null;
-  const exportControl = { hidden: false };
+  const exportControl = { hidden: false,dataset:{} };
   const nodes = {};
   vm.runInNewContext(navigationSource + '\nnavigation();', {
     i18n: { apply() {}, t: String, mark: String }, uiText: String,
